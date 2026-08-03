@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 
-async function signInWithProvider(provider: "google" | "apple") {
+async function signInWithProvider(provider: "google") {
   const supabase = createClient();
   await supabase.auth.signInWithOAuth({
     provider,
@@ -38,14 +38,6 @@ export default function SignInPage() {
             <GoogleIcon />
             Continue with Google
           </button>
-
-          <button
-            onClick={() => signInWithProvider("apple")}
-            className="flex w-full items-center justify-center gap-3 rounded-[--radius-btn] bg-elevated border border-border px-4 py-3.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface active:scale-[0.98]"
-          >
-            <AppleIcon />
-            Continue with Apple
-          </button>
         </div>
 
         <p className="text-center text-xs text-text-muted px-4">
@@ -79,16 +71,3 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M14.045 9.573c-.02-2.055 1.677-3.048 1.752-3.095-1.005-1.42-2.466-1.585-2.974-1.602-1.244-.128-2.454.744-3.088.744-.648 0-1.623-.73-2.676-.71-1.35.02-2.614.8-3.31 2.006-1.43 2.457-.363 6.08 1.007 8.069.684.975 1.49 2.065 2.545 2.026 1.028-.04 1.41-.655 2.648-.655 1.228 0 1.575.655 2.647.631 1.104-.019 1.798-.979 2.466-1.962.79-1.12 1.108-2.222 1.122-2.278-.026-.01-2.14-.82-2.139-3.174ZM11.957 3.37c.549-.673.921-1.6.82-2.537-.793.033-1.784.534-2.36 1.193-.505.585-.955 1.539-.837 2.445.892.066 1.81-.456 2.377-1.101Z" />
-    </svg>
-  );
-}

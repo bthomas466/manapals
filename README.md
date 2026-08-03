@@ -15,7 +15,7 @@ See [`docs/manabox-companion-prd.md`](docs/manabox-companion-prd.md) for the ful
 
 **Available today**
 
-- Google / Apple sign-in via Supabase Auth
+- Google sign-in via Supabase Auth (Apple sign-in pending — button removed until it's wired up)
 - Manabox CSV import, enriched with live card data (images, rarity, colors, prices) from Scryfall
 - Collection browsing with search, color/foil filters, and sort by name, set, rarity, or price
 - Friend requests (send, accept, decline, remove) and friends-only profile visibility
@@ -59,7 +59,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 > [!WARNING]
 > `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security. Keep it server-side only — never expose it to the client or commit it.
 
-You'll also need Google/Apple OAuth providers enabled under **Authentication → Providers** in Supabase, with the redirect URL set to `<your-app-url>/api/auth/callback`.
+You'll also need the Google OAuth provider enabled under **Authentication → Providers** in Supabase, with the redirect URL set to `<your-app-url>/api/auth/callback`. (Apple sign-in isn't wired up yet.)
 
 ### 3. Apply the database schema
 
