@@ -82,6 +82,27 @@ export function mergeDuplicateRows(rows: NormalizedRow[]): NormalizedRow[] {
 
 type ManaboxRawRow = Record<string, string>;
 
+function normalizeHeader(header: string): string {
+  return header.trim().toLowerCase();
+}
+
+function buildHeaderIndex(headers: string[]): Map<string, string> {
+  const index = new Map<string, string>();
+  for (const header of headers) {
+    index.set(normalizeHeader(header), header);
+  }
+  return index;
+}
+
+function getField(
+  raw: ManaboxRawRow,
+  headerIndex: Map<string, string>,
+  name: string
+): string | undefined {
+  const actualKey = headerIndex.get(normalizeHeader(name));
+  return actualKey ? raw[actualKey] : undefined;
+}
+
 export function parseManaboxCsv(file: File): Promise<ParseResult> {
   return new Promise((resolve) => {
     Papa.parse<ManaboxRawRow>(file, {
@@ -89,7 +110,8 @@ export function parseManaboxCsv(file: File): Promise<ParseResult> {
       skipEmptyLines: true,
       complete: (results) => {
         const headers = results.meta.fields ?? [];
-        const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
+        const headerIndex = buildHeaderIndex(headers);
+        const missing = REQUIRED_HEADERS.filter((h) => !headerIndex.has(normalizeHeader(h)));
         if (missing.length > 0) {
           resolve({
             rows: [],
@@ -104,9 +126,9 @@ export function parseManaboxCsv(file: File): Promise<ParseResult> {
         const rows: NormalizedRow[] = [];
 
         results.data.forEach((raw, index) => {
-          const name = raw["Name"]?.trim();
-          const setCode = raw["Set Code"]?.trim();
-          const quantityRaw = raw["Quantity"]?.trim();
+          const name = getField(raw, headerIndex, "Name")?.trim();
+          const setCode = getField(raw, headerIndex, "Set Code")?.trim();
+          const quantityRaw = getField(raw, headerIndex, "Quantity")?.trim();
           const quantity = quantityRaw ? parseInt(quantityRaw, 10) : NaN;
 
           if (!name || !setCode || !Number.isFinite(quantity) || quantity <= 0) {
@@ -115,15 +137,15 @@ export function parseManaboxCsv(file: File): Promise<ParseResult> {
           }
 
           rows.push({
-            scryfallId: raw["Scryfall ID"]?.trim() || null,
+            scryfallId: getField(raw, headerIndex, "Scryfall ID")?.trim() || null,
             name,
             setCode,
             quantity,
-            finish: normalizeFinish(raw["Foil"]),
-            condition: normalizeCondition(raw["Condition"]),
-            language: raw["Language"]?.trim() || "en",
-            binderName: raw["Binder/List Name"]?.trim() || "",
-            manaboxId: raw["ManaBox ID"]?.trim() || null,
+            finish: normalizeFinish(getField(raw, headerIndex, "Foil")),
+            condition: normalizeCondition(getField(raw, headerIndex, "Condition")),
+            language: getField(raw, headerIndex, "Language")?.trim() || "en",
+            binderName: getField(raw, headerIndex, "Binder/List Name")?.trim() || "",
+            manaboxId: getField(raw, headerIndex, "ManaBox ID")?.trim() || null,
           });
         });
 
