@@ -96,40 +96,69 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // A single physical card can appear on multiple rows (different binders,
+  // foil vs. nonfoil, etc.), so dedupe before querying Scryfall — otherwise
+  // the later upsert into the shared `cards` table tries to write the same
+  // scryfall_id twice in one statement, which Postgres rejects.
   const missingIdentifiers: ScryfallIdentifier[] = [];
+  const queuedKeys = new Set<string>();
   for (const row of rows) {
     if (row.scryfallId) {
-      if (!cachedById.has(row.scryfallId)) {
+      if (!cachedById.has(row.scryfallId) && !queuedKeys.has(row.scryfallId)) {
         missingIdentifiers.push({ id: row.scryfallId });
+        queuedKeys.add(row.scryfallId);
       }
-    } else if (!cachedByNameSet.has(nameSetKey(row.name, row.setCode))) {
-      missingIdentifiers.push({ name: row.name, set: row.setCode.toLowerCase() });
+    } else {
+      const key = nameSetKey(row.name, row.setCode);
+      if (!cachedByNameSet.has(key) && !queuedKeys.has(key)) {
+        missingIdentifiers.push({ name: row.name, set: row.setCode.toLowerCase() });
+        queuedKeys.add(key);
+      }
     }
   }
 
   if (missingIdentifiers.length > 0) {
+    let found: ScryfallCard[];
     try {
-      const { found } = await fetchCardsByIdentifiers(missingIdentifiers);
-
-      if (found.length > 0) {
-        const admin = createAdminClient();
-        const { error: upsertError } = await admin
-          .from("cards")
-          .upsert(found.map(toCardInsert), { onConflict: "scryfall_id" });
-        if (upsertError) {
-          throw new Error(upsertError.message);
-        }
-        for (const card of found) {
-          const cardRow: CardRow = { scryfall_id: card.id, name: card.name, set_code: card.set };
-          cachedById.set(card.id, cardRow);
-          cachedByNameSet.set(nameSetKey(card.name, card.set), cardRow);
-        }
-      }
-    } catch {
+      ({ found } = await fetchCardsByIdentifiers(missingIdentifiers));
+    } catch (error) {
+      console.error(
+        "Scryfall enrichment failed during import:",
+        error instanceof Error ? error.message : error
+      );
       return NextResponse.json(
         { error: "Couldn't reach Scryfall to enrich card data. Nothing was changed — try again shortly." },
         { status: 502 }
       );
+    }
+
+    if (found.length > 0) {
+      // Defense in depth: even with deduped identifiers above, guard against
+      // duplicate scryfall_ids in the upsert batch (e.g. two differently
+      // formatted identifiers resolving to the same card).
+      const uniqueFound = Array.from(new Map(found.map((card) => [card.id, card])).values());
+
+      const admin = createAdminClient();
+      const { error: upsertError } = await admin
+        .from("cards")
+        .upsert(uniqueFound.map(toCardInsert), { onConflict: "scryfall_id" });
+      if (upsertError) {
+        console.error("Failed to upsert enriched cards:", {
+          message: upsertError.message,
+          code: upsertError.code,
+          details: upsertError.details,
+          hint: upsertError.hint,
+        });
+        return NextResponse.json(
+          { error: "Failed to save card data. Nothing was changed — try again shortly." },
+          { status: 500 }
+        );
+      }
+      for (const card of uniqueFound) {
+        const cardRow: CardRow = { scryfall_id: card.id, name: card.name, set_code: card.set };
+        cachedById.set(card.id, cardRow);
+        cachedByNameSet.set(nameSetKey(card.name, card.set), cardRow);
+      }
     }
   }
 
