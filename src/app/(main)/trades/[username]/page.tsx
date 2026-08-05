@@ -2,9 +2,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import type { CollectionItem } from "@/components/collection/CollectionGrid";
+import { getWishlistItems, type WishlistItem } from "@/lib/wishlist/queries";
 
 type CardSummary = {
   scryfall_id: string;
+  oracle_id: string | null;
   name: string;
   set_code: string;
   image_small: string | null;
@@ -14,7 +16,7 @@ type CardSummary = {
   price: number | null;
 };
 
-function aggregateByCard(items: CollectionItem[]): Map<string, CardSummary> {
+function aggregateByCard(items: CollectionItemWithOracle[]): Map<string, CardSummary> {
   const map = new Map<string, CardSummary>();
   for (const item of items) {
     if (!item.card) continue;
@@ -26,6 +28,7 @@ function aggregateByCard(items: CollectionItem[]): Map<string, CardSummary> {
     } else {
       map.set(item.card.scryfall_id, {
         scryfall_id: item.card.scryfall_id,
+        oracle_id: item.card.oracle_id,
         name: item.card.name,
         set_code: item.card.set_code,
         image_small: item.card.image_small,
@@ -39,19 +42,38 @@ function aggregateByCard(items: CollectionItem[]): Map<string, CardSummary> {
   return map;
 }
 
+// Extends the shared CollectionItem shape with oracle_id, needed only here
+// to match "any printing" wishlist entries against a friend's collection.
+type CollectionItemWithOracle = Omit<CollectionItem, "card"> & {
+  card: (NonNullable<CollectionItem["card"]> & { oracle_id: string | null }) | null;
+};
+
 async function fetchCollectionByUser(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string
-): Promise<CollectionItem[]> {
+): Promise<CollectionItemWithOracle[]> {
   const { data } = await supabase
     .from("collection_items")
     .select(
-      "id, quantity, finish, condition, binder_name, card:cards(scryfall_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
+      "id, quantity, finish, condition, binder_name, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
     )
     .eq("user_id", userId)
     .order("id")
-    .returns<CollectionItem[]>();
+    .returns<CollectionItemWithOracle[]>();
   return data ?? [];
+}
+
+// "Available to trade" flags (US-11/12) don't exist yet, so the offering
+// side always falls back to the full collection (PRD §4.6). The wanting
+// side narrows to the other user's wishlist once they have one — an empty
+// wishlist still means "wants everything," so existing matches are
+// unaffected until a user actually adds wishlist items.
+function buildWantMatcher(wishlist: WishlistItem[]): (card: CardSummary) => boolean {
+  const specificIds = new Set(wishlist.filter((w) => w.match_mode === "specific").map((w) => w.card_id));
+  const oracleIds = new Set(
+    wishlist.filter((w) => w.match_mode === "any_printing" && w.oracle_id).map((w) => w.oracle_id)
+  );
+  return (card) => specificIds.has(card.scryfall_id) || (card.oracle_id != null && oracleIds.has(card.oracle_id));
 }
 
 export default async function TradeMatchPage({
@@ -88,13 +110,17 @@ export default async function TradeMatchPage({
 
   if (!friendship) redirect("/trades");
 
-  const [viewerItems, friendItems] = await Promise.all([
+  const [viewerItems, friendItems, viewerWishlist, friendWishlist] = await Promise.all([
     fetchCollectionByUser(supabase, user.id),
     fetchCollectionByUser(supabase, friendProfile.user_id),
+    getWishlistItems(supabase, user.id),
+    getWishlistItems(supabase, friendProfile.user_id),
   ]);
 
   const viewerMap = aggregateByCard(viewerItems);
   const friendMap = aggregateByCard(friendItems);
+  const viewerWants = buildWantMatcher(viewerWishlist);
+  const friendWants = buildWantMatcher(friendWishlist);
 
   const youHaveTheyWant: CardSummary[] = [];
   const theyHaveYouWant: CardSummary[] = [];
@@ -103,14 +129,14 @@ export default async function TradeMatchPage({
   for (const [id, card] of viewerMap) {
     const theirs = friendMap.get(id);
     if (!theirs) {
-      youHaveTheyWant.push(card);
+      if (friendWishlist.length === 0 || friendWants(card)) youHaveTheyWant.push(card);
     } else if (card.quantity > 1 || theirs.quantity > 1) {
       bothHaveExtras.push(card);
     }
   }
   for (const [id, card] of friendMap) {
     if (!viewerMap.has(id)) {
-      theyHaveYouWant.push(card);
+      if (viewerWishlist.length === 0 || viewerWants(card)) theyHaveYouWant.push(card);
     }
   }
 

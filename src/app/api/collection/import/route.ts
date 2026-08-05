@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fetchCardsByIdentifiers,
-  getColors,
-  getImageUris,
   type ScryfallCard,
   type ScryfallIdentifier,
 } from "@/lib/scryfall/client";
+import { upsertCards } from "@/lib/scryfall/cardRow";
 import type { NormalizedRow } from "@/lib/csv/manabox";
 
 type CardRow = {
@@ -20,30 +18,6 @@ type UnmatchedRow = { name: string; setCode: string };
 
 function nameSetKey(name: string, setCode: string): string {
   return `${name.toLowerCase()}::${setCode.toLowerCase()}`;
-}
-
-function toCardInsert(card: ScryfallCard) {
-  const images = getImageUris(card);
-  return {
-    scryfall_id: card.id,
-    oracle_id: card.oracle_id ?? null,
-    name: card.name,
-    set_code: card.set,
-    set_name: card.set_name,
-    collector_number: card.collector_number,
-    rarity: card.rarity,
-    mana_cost: card.mana_cost ?? null,
-    cmc: card.cmc ?? null,
-    type_line: card.type_line,
-    colors: getColors(card),
-    color_identity: card.color_identity ?? [],
-    image_small: images?.small ?? null,
-    image_normal: images?.normal ?? null,
-    price_usd: card.prices?.usd ? Number(card.prices.usd) : null,
-    price_usd_foil: card.prices?.usd_foil ? Number(card.prices.usd_foil) : null,
-    scryfall_uri: card.scryfall_uri ?? null,
-    raw_data: card,
-  };
 }
 
 export async function POST(request: NextRequest) {
@@ -138,17 +112,10 @@ export async function POST(request: NextRequest) {
       // formatted identifiers resolving to the same card).
       const uniqueFound = Array.from(new Map(found.map((card) => [card.id, card])).values());
 
-      const admin = createAdminClient();
-      const { error: upsertError } = await admin
-        .from("cards")
-        .upsert(uniqueFound.map(toCardInsert), { onConflict: "scryfall_id" });
-      if (upsertError) {
-        console.error("Failed to upsert enriched cards:", {
-          message: upsertError.message,
-          code: upsertError.code,
-          details: upsertError.details,
-          hint: upsertError.hint,
-        });
+      try {
+        await upsertCards(uniqueFound);
+      } catch (upsertError) {
+        console.error("Failed to upsert enriched cards:", upsertError);
         return NextResponse.json(
           { error: "Failed to save card data. Nothing was changed — try again shortly." },
           { status: 500 }

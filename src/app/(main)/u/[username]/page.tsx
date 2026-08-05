@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import CollectionGrid, { type CollectionItem } from "@/components/collection/CollectionGrid";
 import FriendActionButton from "@/components/friends/FriendActionButton";
+import WishlistGrid from "@/components/wishlist/WishlistGrid";
+import { getWishlistItems } from "@/lib/wishlist/queries";
 
 export default async function PublicProfilePage({
   params,
@@ -58,6 +60,9 @@ export default async function PublicProfilePage({
     items = data ?? [];
   }
 
+  // Wishlist is friends-only regardless of collection_visibility (PRD §4.7).
+  const wishlistItems = status === "friends" ? await getWishlistItems(supabase, profile.user_id) : [];
+
   return (
     <div className="px-4 pt-6 space-y-6 pb-4">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -99,6 +104,21 @@ export default async function PublicProfilePage({
             Add {profile.display_name} as a friend to browse their cards.
           </p>
         </div>
+      )}
+
+      {status === "friends" && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-text-primary">Wishlist</h2>
+          <WishlistGrid
+            items={wishlistItems}
+            editable={false}
+            emptyState={
+              <p className="text-sm text-text-secondary">
+                {profile.display_name} hasn&apos;t added anything to their wishlist yet.
+              </p>
+            }
+          />
+        </section>
       )}
     </div>
   );

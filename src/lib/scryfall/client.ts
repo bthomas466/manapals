@@ -1,4 +1,6 @@
 const SCRYFALL_COLLECTION_URL = "https://api.scryfall.com/cards/collection";
+const SCRYFALL_AUTOCOMPLETE_URL = "https://api.scryfall.com/cards/autocomplete";
+const SCRYFALL_SEARCH_URL = "https://api.scryfall.com/cards/search";
 const BATCH_SIZE = 75;
 const REQUEST_DELAY_MS = 110; // stay under Scryfall's 10 req/s limit
 const USER_AGENT = "ManaPals/0.1 (+https://manapals.app; contact: bthomas466@gmail.com)";
@@ -88,4 +90,40 @@ export async function fetchCardsByIdentifiers(
   }
 
   return { found, notFound };
+}
+
+export async function autocompleteCardNames(query: string): Promise<string[]> {
+  const url = new URL(SCRYFALL_AUTOCOMPLETE_URL);
+  url.searchParams.set("q", query);
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(`Scryfall autocomplete failed (${response.status})`);
+  }
+
+  const result = (await response.json()) as { data: string[] };
+  return result.data ?? [];
+}
+
+export async function searchPrintings(name: string): Promise<ScryfallCard[]> {
+  const url = new URL(SCRYFALL_SEARCH_URL);
+  url.searchParams.set("q", `!"${name}"`);
+  url.searchParams.set("unique", "prints");
+  url.searchParams.set("order", "released");
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(`Scryfall search failed (${response.status})`);
+  }
+
+  const result = (await response.json()) as { data: ScryfallCard[] };
+  return result.data ?? [];
 }
