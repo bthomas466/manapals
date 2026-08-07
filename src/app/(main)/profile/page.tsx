@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ensureProfile } from "@/lib/profile/ensure";
 import { getAcceptedFriends } from "@/lib/friends/queries";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
+import VisibilityToggle from "@/components/profile/VisibilityToggle";
 import FriendSearchBox from "@/components/profile/FriendSearchBox";
 import { IncomingRequestActions, OutgoingRequestActions } from "@/components/friends/FriendRequestActions";
 
@@ -92,6 +93,17 @@ export default async function ProfilePage() {
           </div>
         ))}
       </div>
+
+      {/* Collection visibility */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-bold text-text-primary">Collection visibility</h2>
+        <p className="text-sm text-text-secondary">
+          {profile?.collection_visibility === "public"
+            ? "Anyone can browse your collection."
+            : "Only friends can browse your collection."}
+        </p>
+        {profile && <VisibilityToggle initialVisibility={profile.collection_visibility} />}
+      </section>
 
       {/* Find a friend */}
       <section className="space-y-2">

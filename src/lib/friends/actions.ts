@@ -85,6 +85,28 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   return {};
 }
 
+export async function updateCollectionVisibility(
+  visibility: "friends" | "public"
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (visibility !== "friends" && visibility !== "public") {
+    return { error: "Invalid visibility." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ collection_visibility: visibility })
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Couldn't update visibility." };
+  return {};
+}
+
 export async function findProfileByUsername(
   username: string
 ): Promise<{ username: string; display_name: string } | null> {
