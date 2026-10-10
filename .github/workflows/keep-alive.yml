@@ -1,0 +1,33 @@
+name: Keep Supabase awake
+
+# Free-tier Supabase projects pause after ~7 days without activity. A tiny
+# read every 3 days keeps prod and staging up. The publishable keys are
+# browser-safe (RLS protects data), so they live in repo variables.
+on:
+  schedule:
+    - cron: "17 9 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: production
+            url_var: SUPABASE_PROD_URL
+            key_var: SUPABASE_PROD_PUBLISHABLE_KEY
+          - name: staging
+            url_var: SUPABASE_STAGING_URL
+            key_var: SUPABASE_STAGING_PUBLISHABLE_KEY
+    steps:
+      - name: Query ${{ matrix.name }}
+        env:
+          URL: ${{ vars[matrix.url_var] }}
+          KEY: ${{ vars[matrix.key_var] }}
+        run: |
+          # Hits Postgres through PostgREST; RLS returns no rows to anon, which is fine.
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/cards?select=scryfall_id&limit=1" -H "apikey: $KEY")
+          echo "$URL → HTTP $status"
+          test "$status" = "200"
