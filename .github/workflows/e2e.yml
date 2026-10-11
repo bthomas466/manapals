@@ -23,6 +23,12 @@ jobs:
     env:
       PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      # Previews run against staging; the auth setup signs in the seeded E2E
+      # user there. Signed-in specs skip if E2E_PASSWORD isn't set.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_STAGING_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+      E2E_EMAIL: e2e@manapals.test
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

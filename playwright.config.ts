@@ -1,4 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
+import { AUTH_STATE } from "./tests/e2e/helpers";
+
+// Local runs read Supabase + E2E credentials from .env.local; CI passes env vars.
+try {
+  process.loadEnvFile(".env.local");
+} catch {}
 
 // E2E runs against PLAYWRIGHT_BASE_URL when set (e.g. a Vercel preview in CI),
 // otherwise against a local dev server.
@@ -22,11 +28,24 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    // Full Chromium rather than headless-shell (its download stalls on some machines).
+    channel: "chromium",
     extraHTTPHeaders: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : undefined,
   },
+  // ManaPals is mobile-first, so every project uses a phone viewport.
   projects: [
-    // ManaPals is mobile-first, so the primary project is a phone viewport.
-    { name: "mobile", use: { ...devices["Pixel 7"], channel: "chromium" } },
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "mobile",
+      testIgnore: /authed\//,
+      use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "authed",
+      testMatch: /authed\/.*\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { ...devices["Pixel 7"], storageState: AUTH_STATE },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
