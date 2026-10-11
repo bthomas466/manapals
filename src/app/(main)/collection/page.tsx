@@ -15,6 +15,8 @@ export default async function CollectionPage() {
     .select(
       "id, quantity, finish, condition, binder_name, card:cards(scryfall_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
     )
+    // RLS also lets you read friends' and public collections, so filter to your own.
+    .eq("user_id", user.id)
     .order("id")
     .returns<CollectionItem[]>();
 
