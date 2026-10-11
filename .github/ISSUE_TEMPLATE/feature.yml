@@ -1,0 +1,22 @@
+name: Feature (AI factory)
+description: An idea for the factory to spec, design, build, and ship to a preview
+title: "[Feature] "
+labels: [factory]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What should exist that doesn't today? Plain language is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: Who is this for and what problem does it solve?
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Constraints, PRD references (e.g. US-11), or things to avoid.
