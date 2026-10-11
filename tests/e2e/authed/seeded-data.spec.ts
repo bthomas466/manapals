@@ -6,10 +6,15 @@ import { requireE2EUser } from "../helpers";
 // mutate data must create and clean up their own rows.
 requireE2EUser();
 
-test("collection shows the seeded cards", async ({ page }) => {
+test("collection shows only your own cards", async ({ page }) => {
   await page.goto("/collection");
   for (const name of ["Sol Ring", "Arcane Signet", "Lightning Bolt", "Counterspell"]) {
     await expect(page.getByRole("img", { name })).toBeVisible();
+  }
+  // e2e_friend's cards are readable via the friends RLS policy, but must not
+  // appear in your own collection.
+  for (const name of ["Llanowar Elves", "Cultivate", "Swords to Plowshares"]) {
+    await expect(page.getByRole("img", { name })).toHaveCount(0);
   }
 });
 
