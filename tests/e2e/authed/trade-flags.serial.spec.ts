@@ -17,6 +17,15 @@ import {
 requireE2EUser();
 test.describe.configure({ mode: "serial" });
 
+// UI saves are optimistic and the server action lands asynchronously, so any DB
+// assertion that follows a UI-initiated write must wait for the write.
+const pollStatus = (name: string) =>
+  expect.poll(async () => (await readFlags()).find((r) => r.name === name)?.status, { timeout: 10_000 });
+const pollBinder = (binder: string, predicate: (status: string | null) => boolean) =>
+  expect.poll(async () => (await readFlags()).filter((r) => r.binder === binder).every((r) => predicate(r.status)), {
+    timeout: 10_000,
+  });
+
 let snapshot: CollectionSnapshot | undefined;
 
 test.beforeAll(async () => {
@@ -105,12 +114,13 @@ test.describe("marking a card", () => {
     await radio(dialog, "Not for trade").click();
     await expect(radio(dialog, "Not for trade")).toBeChecked();
     await expect(tile(page, "Arcane Signet").getByText("Not for trade", { exact: true })).toBeVisible();
+    await pollStatus("Arcane Signet").toBe("not_for_trade");
 
     await page.reload();
     await expect(tile(page, "Arcane Signet").getByText("Not for trade", { exact: true })).toBeVisible();
     const reopened = await openCard(page, "Arcane Signet");
     await expect(radio(reopened, "Not for trade")).toBeChecked();
-    expect((await readFlags()).find((r) => r.name === "Arcane Signet")?.status).toBe("not_for_trade");
+    await pollStatus("Arcane Signet").toBe("not_for_trade");
   });
 
   test("AC-11: the first Available flag asks for confirmation; Cancel keeps Unmarked, Confirm saves", async ({ page }) => {
@@ -133,13 +143,14 @@ test.describe("marking a card", () => {
     await expect(tile(page, "Sol Ring").getByText("Available", { exact: true })).toBeVisible();
     await expect(radio(dialog, "Available to trade")).toBeChecked();
     await closeCard(dialog);
-    expect((await readFlags()).find((r) => r.name === "Sol Ring")?.status).toBe("available");
+    await pollStatus("Sol Ring").toBe("available");
 
     // A second Available flag needs no confirmation.
     dialog = await openCard(page, "Arcane Signet");
     await radio(dialog, "Available to trade").click();
     await expect(tile(page, "Arcane Signet").getByText("Available", { exact: true })).toBeVisible();
     await expect(confirmDialog(page)).toHaveCount(0);
+    await pollStatus("Arcane Signet").toBe("available");
   });
 
   test("AC-12: choosing Unmarked removes the badge, also after a reload", async ({ page }) => {
@@ -152,11 +163,12 @@ test.describe("marking a card", () => {
     await radio(dialog, "Unmarked").click();
     await expect(radio(dialog, "Unmarked")).toBeChecked();
     await expect(tile(page, "Sol Ring").getByText("Available", { exact: true })).toHaveCount(0);
+    await pollStatus("Sol Ring").toBeNull();
 
     await page.reload();
     await expect(tileButton(page, "Sol Ring")).toBeVisible();
     await expect(tile(page, "Sol Ring").getByText("Available", { exact: true })).toHaveCount(0);
-    expect((await readFlags()).find((r) => r.name === "Sol Ring")?.status).toBeNull();
+    await pollStatus("Sol Ring").toBeNull();
   });
 
   test("AC-13: the For trade / Not for trade chips filter the grid", async ({ page }) => {
@@ -245,9 +257,8 @@ test.describe("bulk by binder", () => {
     await expect(anyTile(page, "Deck A")).toHaveCount(5);
     await expect(anyTile(page, "Trade")).toHaveCount(0);
 
-    const flags = await readFlags();
-    expect(flags.filter((r) => r.binder === "Deck A").every((r) => r.status === "not_for_trade")).toBe(true);
-    expect(flags.filter((r) => r.binder === "Trade").every((r) => r.status === null)).toBe(true);
+    await pollBinder("Deck A", (s) => s === "not_for_trade").toBe(true);
+    expect((await readFlags()).filter((r) => r.binder === "Trade").every((r) => r.status === null)).toBe(true);
 
     // The toast dismisses itself (4s).
     await expect(toast).not.toContainText("entries updated", { timeout: 8000 });
@@ -271,9 +282,8 @@ test.describe("bulk by binder", () => {
     await binderGroup(page, "Trade").getByRole("button", { name: "Available", exact: true }).click();
     await confirmDialog(page).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("status")).toContainText("3 entries updated");
-    const flags = await readFlags();
-    expect(flags.filter((r) => r.binder === "Trade").every((r) => r.status === "available")).toBe(true);
-    expect(flags.filter((r) => r.binder === "Deck A").every((r) => r.status === null)).toBe(true);
+    await pollBinder("Trade", (s) => s === "available").toBe(true);
+    expect((await readFlags()).filter((r) => r.binder === "Deck A").every((r) => r.status === null)).toBe(true);
   });
 
   test("AC-18: Clear resets one binder and leaves the others flagged", async ({ page }) => {
@@ -289,10 +299,9 @@ test.describe("bulk by binder", () => {
     await expect(page.getByRole("status")).toContainText("5 entries updated");
     await expect(confirmDialog(page)).toHaveCount(0);
 
+    await pollBinder("Deck A", (s) => s === null).toBe(true);
     const flags = await readFlags();
-    const deckA = flags.filter((r) => r.binder === "Deck A");
-    expect(deckA).toHaveLength(5);
-    expect(deckA.every((r) => r.status === null)).toBe(true);
+    expect(flags.filter((r) => r.binder === "Deck A")).toHaveLength(5);
     expect(flags.find((r) => r.binder === "Trade" && r.name === "Sol Ring")?.status).toBe("available");
 
     await settingsDialog(page).getByRole("button", { name: "Close" }).click();
