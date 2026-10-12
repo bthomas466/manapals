@@ -43,7 +43,17 @@ export default defineConfig({
     {
       name: "authed",
       testMatch: /authed\/.*\.spec\.ts/,
+      testIgnore: /\.serial\.spec\.ts/,
       dependencies: ["setup"],
+      use: { ...devices["Pixel 7"], storageState: AUTH_STATE },
+    },
+    // Specs that mutate e2e_player's collection run alone, after the read-only ones.
+    {
+      name: "authed-serial",
+      testMatch: /authed\/.*\.serial\.spec\.ts/,
+      dependencies: ["authed"],
+      fullyParallel: false,
+      workers: 1,
       use: { ...devices["Pixel 7"], storageState: AUTH_STATE },
     },
   ],

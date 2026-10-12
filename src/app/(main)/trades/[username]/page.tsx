@@ -4,6 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import { getWishlistItems } from "@/lib/wishlist/queries";
 import {
   computeTradeMatches,
+  describeOffer,
+  formatOfferLine,
   type CardSummary,
   type CollectionItemWithOracle,
 } from "@/lib/trades/match";
@@ -15,7 +17,7 @@ async function fetchCollectionByUser(
   const { data } = await supabase
     .from("collection_items")
     .select(
-      "id, quantity, finish, condition, binder_name, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
+      "id, quantity, finish, condition, binder_name, trade_status, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
     )
     .eq("user_id", userId)
     .order("id")
@@ -71,6 +73,14 @@ export default async function TradeMatchPage({
     friendWishlist,
   });
 
+  const offer = describeOffer(viewerItems);
+  const offerDot =
+    offer.mode === "opt_in"
+      ? "bg-success"
+      : offer.notForTradeCount > 0
+        ? "bg-amber"
+        : "bg-text-muted";
+
   return (
     <div className="px-4 pt-6 space-y-6 pb-4">
       <div className="flex items-center gap-3">
@@ -94,9 +104,28 @@ export default async function TradeMatchPage({
         </div>
       </div>
 
+      <p className="flex items-center gap-2 text-sm text-text-secondary">
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${offerDot}`} />
+        <span>
+          {formatOfferLine(offer)} ·{" "}
+          <Link href="/collection" className="font-semibold text-amber">
+            Edit on Collection
+          </Link>
+        </span>
+      </p>
+
       <MatchSection
         title="You have, they want"
-        emptyText={`${friendProfile.display_name} already owns everything you have, or you haven't imported a collection yet.`}
+        emptyText={
+          <>
+            {friendProfile.display_name} already owns everything you offer, or you haven&apos;t imported a
+            collection yet. You can{" "}
+            <Link href="/collection" className="font-semibold text-amber">
+              mark cards for trade
+            </Link>
+            .
+          </>
+        }
         cards={youHaveTheyWant}
       />
       <MatchSection
@@ -119,7 +148,7 @@ function MatchSection({
   cards,
 }: {
   title: string;
-  emptyText: string;
+  emptyText: React.ReactNode;
   cards: CardSummary[];
 }) {
   return (

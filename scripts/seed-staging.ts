@@ -15,7 +15,14 @@ import { upsertCards } from "@/lib/scryfall/cardRow";
 const PROD_REF = "wzjkexompmfvuxnmkzxl";
 
 type Finish = "nonfoil" | "foil" | "etched";
-type SeedItem = { name: string; set: string; quantity?: number; finish?: Finish };
+type SeedItem = {
+  name: string;
+  set: string;
+  quantity?: number;
+  finish?: Finish;
+  binder?: string;
+  tradeStatus?: "available" | "not_for_trade";
+};
 type SeedWant = { name: string; set: string; mode: "specific" | "any_printing" };
 type SeedUser = {
   email: string;
@@ -23,12 +30,17 @@ type SeedUser = {
   displayName: string;
   collection: SeedItem[];
   wishlist: SeedWant[];
+  // Friended to e2e_player (default true). The stranger is deliberately not.
+  friended?: boolean;
 };
 
 // Expected Trade Match for e2e_player viewing e2e_friend:
 //   You have, they want:   Arcane Signet        (friend's wishlist narrows to it)
-//   They have, you want:   Swords to Plowshares (any-printing wish, matched by oracle id)
+//   They have, you want:   Swords to Plowshares (any-printing wish, matched by oracle id;
+//                          Path to Exile is wished too but the friend is in opt-in mode
+//                          with only Swords marked Available, so it is not offered)
 //   You both have extras:  Sol Ring             (player owns 2)
+// e2e_player has no trade flags (whole collection). e2e_stranger is not a friend.
 const USERS: SeedUser[] = [
   {
     email: "e2e@manapals.test",
@@ -40,7 +52,10 @@ const USERS: SeedUser[] = [
       { name: "Lightning Bolt", set: "m10", finish: "foil" },
       { name: "Counterspell", set: "mh2" },
     ],
-    wishlist: [{ name: "Swords to Plowshares", set: "ema", mode: "any_printing" }],
+    wishlist: [
+      { name: "Swords to Plowshares", set: "ema", mode: "any_printing" },
+      { name: "Path to Exile", set: "con", mode: "any_printing" },
+    ],
   },
   {
     email: "e2e-friend@manapals.test",
@@ -48,11 +63,20 @@ const USERS: SeedUser[] = [
     displayName: "E2E Friend",
     collection: [
       { name: "Sol Ring", set: "cmr" },
-      { name: "Swords to Plowshares", set: "ema" },
+      { name: "Swords to Plowshares", set: "ema", binder: "Trade Binder", tradeStatus: "available" },
+      { name: "Path to Exile", set: "con", binder: "Bulk" },
       { name: "Llanowar Elves", set: "dom", quantity: 3 },
       { name: "Cultivate", set: "m21" },
     ],
     wishlist: [{ name: "Arcane Signet", set: "cmr", mode: "specific" }],
+  },
+  {
+    email: "e2e-stranger@manapals.test",
+    username: "e2e_stranger",
+    displayName: "E2E Stranger",
+    collection: [{ name: "Cultivate", set: "m21", tradeStatus: "not_for_trade" }],
+    wishlist: [],
+    friended: false,
   },
 ];
 
@@ -120,7 +144,12 @@ async function main() {
     const { error: profileError } = await admin
       .from("profiles")
       .upsert(
-        { user_id: userId, username: user.username, display_name: user.displayName },
+        {
+          user_id: userId,
+          username: user.username,
+          display_name: user.displayName,
+          collection_visibility: "friends",
+        },
         { onConflict: "user_id" }
       );
     if (profileError) throw profileError;
@@ -140,6 +169,8 @@ async function main() {
           card_id: lookup(item.name, item.set).id,
           quantity: item.quantity ?? 1,
           finish: item.finish ?? "nonfoil",
+          binder_name: item.binder ?? "",
+          trade_status: item.tradeStatus ?? null,
         }))
       )
       .throwOnError();
@@ -158,11 +189,26 @@ async function main() {
     console.log(`✓ ${user.username}: ${user.collection.length} collection rows, ${user.wishlist.length} wishlist`);
   }
 
-  await admin
-    .from("friendships")
-    .upsert({ requester_id: ids[0], addressee_id: ids[1], status: "accepted" }, { onConflict: "user_low,user_high" })
-    .throwOnError();
-  console.log("✓ e2e_player ↔ e2e_friend are friends");
+  for (let i = 1; i < USERS.length; i++) {
+    const [player, other] = [ids[0], ids[i]];
+    if (USERS[i].friended === false) {
+      // Reset any friendship left over from a previous run.
+      await admin
+        .from("friendships")
+        .delete()
+        .or(
+          `and(requester_id.eq.${player},addressee_id.eq.${other}),and(requester_id.eq.${other},addressee_id.eq.${player})`
+        )
+        .throwOnError();
+      console.log(`✓ e2e_player and ${USERS[i].username} are not friends`);
+    } else {
+      await admin
+        .from("friendships")
+        .upsert({ requester_id: player, addressee_id: other, status: "accepted" }, { onConflict: "user_low,user_high" })
+        .throwOnError();
+      console.log(`✓ e2e_player ↔ ${USERS[i].username} are friends`);
+    }
+  }
 }
 
 main().catch((error) => {

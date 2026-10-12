@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Trade availability flags - mockup</title>
+<style>
+:root{
+ --page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);
+ --border:oklch(28% .014 260);--border-strong:oklch(30% .014 260);
+ --amber:oklch(78% .13 80);--success:oklch(70% .15 145);
+ --tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260);
+ --danger:oklch(68% .16 25);
+ --r-card:16px;--r-btn:12px;--r-chip:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--tp);font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;width:390px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0}
+.cap{background:#000;color:#9aa;font:700 11px/1.3 ui-monospace,Menlo,monospace;padding:14px 16px 6px;letter-spacing:.02em}
+.cap b{color:var(--amber)}
+.screen{position:relative;width:390px;background:var(--page);overflow:hidden;border-top:1px solid var(--border)}
+.pad{padding:24px 16px 16px}
+h1{font-size:20px;font-weight:700}
+.sub{font-size:14px;color:var(--ts);margin-top:4px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hbtns{display:flex;gap:8px;flex-shrink:0}
+.btn-s{min-height:44px;border:1px solid var(--border);background:var(--elevated);border-radius:var(--r-btn);padding:0 12px;font-size:12px;font-weight:600;color:var(--ts);display:inline-flex;align-items:center;gap:6px}
+.btn-s.trade{color:var(--tp)}
+.search{margin-top:16px;width:100%;border:1px solid var(--border);background:var(--elevated);border-radius:var(--r-chip);padding:12px;font-size:14px;color:var(--tm);min-height:44px}
+.chiprow{display:flex;gap:8px;margin-top:12px;align-items:center}
+.chips{display:flex;gap:8px;overflow:hidden;flex:1;position:relative}
+.chips::after{content:"";position:absolute;right:0;top:0;bottom:0;width:28px;background:linear-gradient(90deg,transparent,var(--page))}
+.chip{flex-shrink:0;min-height:44px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--elevated);border-radius:var(--r-chip);padding:0 12px;font-size:12px;font-weight:600;color:var(--ts)}
+.chip.on{background:var(--amber);border-color:var(--amber);color:var(--page)}
+.sel{flex-shrink:0;min-height:44px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--elevated);border-radius:var(--r-chip);padding:0 10px;font-size:12px;font-weight:600;color:var(--ts)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.tile{position:relative;aspect-ratio:5/7;border-radius:var(--r-chip);border:1px solid var(--border);overflow:hidden;background:var(--elevated);display:block;width:100%;text-align:left}
+.tile .art{position:absolute;inset:0;display:flex;align-items:flex-end;padding:8px 6px;font-size:10.5px;font-weight:700;line-height:1.15;color:rgba(255,255,255,.85);text-shadow:0 1px 2px #000}
+.tile.nft .art{filter:saturate(.2) brightness(.55)}
+.tile.avail{border-color:color-mix(in oklch,var(--success) 70%,transparent)}
+.q{position:absolute;top:4px;right:4px;border-radius:99px;background:oklch(13% .01 260/.85);padding:2px 6px;font-size:10px;font-weight:700}
+.foil{position:absolute;top:4px;left:4px;border-radius:99px;background:var(--amber);color:var(--page);padding:2px 6px;font-size:10px;font-weight:700}
+.badge{position:absolute;bottom:4px;left:4px;border-radius:99px;padding:2px 7px;font-size:10px;font-weight:800;display:inline-flex;gap:3px;align-items:center}
+.badge.a{background:var(--success);color:var(--page)}
+.badge.n{background:oklch(13% .01 260/.9);color:var(--ts);border:1px solid var(--border-strong)}
+.tile .art.pad2{padding-bottom:26px}
+.empty{text-align:center;color:var(--tm);font-size:14px;padding-top:32px}
+/* sheets */
+.dim{position:absolute;inset:0;background:oklch(5% .01 260/.7)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border-strong);border-radius:20px 20px 0 0;padding:8px 16px 20px}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--border-strong);margin:0 auto 14px}
+.sh-title{font-size:16px;font-weight:700}
+.row{display:flex;gap:12px;align-items:center}
+.thumb{width:64px;aspect-ratio:5/7;border-radius:6px;border:1px solid var(--border);flex-shrink:0}
+.meta{font-size:13px;color:var(--ts);line-height:1.5;margin-top:4px}
+.meta b{color:var(--tp);font-weight:600}
+.lbl{font-size:12px;font-weight:700;color:var(--ts);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-btn);padding:4px}
+.seg button{min-height:52px;border-radius:9px;font-size:12px;font-weight:700;color:var(--ts);line-height:1.2;padding:4px 6px}
+.seg button.on-u{background:var(--border-strong);color:var(--tp)}
+.seg button.on-a{background:var(--success);color:var(--page)}
+.seg button.on-n{background:var(--tp);color:var(--page)}
+.seg.dis{opacity:.55}
+.hint{font-size:12px;color:var(--tm);margin-top:10px;line-height:1.45}
+.err{margin-top:12px;border:1px solid color-mix(in oklch,var(--danger) 60%,transparent);background:color-mix(in oklch,var(--danger) 14%,var(--surface));color:var(--tp);border-radius:var(--r-btn);padding:10px 12px;font-size:13px;font-weight:600;display:flex;gap:8px}
+.err span{color:var(--danger)}
+.btn-p{min-height:48px;border-radius:var(--r-btn);background:var(--amber);color:var(--page);font-weight:800;font-size:14px;width:100%}
+.btn-g{min-height:48px;border-radius:var(--r-btn);border:1px solid var(--border);background:var(--elevated);color:var(--tp);font-weight:700;font-size:14px;width:100%}
+.dialog{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%);background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-card);padding:20px 16px 16px}
+.dialog p{font-size:14px;color:var(--ts);line-height:1.5;margin-top:8px}
+.dialog p b{color:var(--tp)}
+.dialog .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+/* binders */
+.binder{border:1px solid var(--border);background:var(--elevated);border-radius:var(--r-card);padding:12px;margin-top:10px}
+.binder .nm{font-weight:700;font-size:14px}
+.binder .ct{font-size:12px;color:var(--ts);margin-top:2px}
+.acts{display:grid;grid-template-columns:1fr 1fr 74px;gap:6px;margin-top:10px}
+.acts button{min-height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-size:12px;font-weight:700;color:var(--tp);line-height:1.15;padding:2px 4px}
+.acts button.dis{opacity:.4}
+.acts button.busy{border-color:var(--amber);color:var(--amber);opacity:1}
+.acts button.clr{color:var(--ts)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--amber);border-right-color:transparent;border-radius:50%;vertical-align:-2px;margin-right:4px}
+.state{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:1px}
+.state.a{background:color-mix(in oklch,var(--success) 25%,transparent);color:var(--success)}
+.state.n{background:var(--border);color:var(--ts)}
+.state.m{background:var(--border);color:var(--tm)}
+.toast{position:absolute;left:16px;right:16px;bottom:16px;background:var(--tp);color:var(--page);border-radius:var(--r-btn);padding:12px 14px;font-size:13px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 8px 24px #0008}
+.skel{background:linear-gradient(90deg,var(--elevated),var(--border),var(--elevated));border-radius:var(--r-btn)}
+/* trade match */
+.fr{display:flex;gap:12px;align-items:center;margin-top:20px}
+.av{width:48px;height:48px;border-radius:99px;background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px}
+.offer{margin-top:16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-btn);padding:0 12px;min-height:44px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ts)}
+.offer b{color:var(--tp);font-weight:700}
+.offer a{color:var(--amber);font-weight:700;text-decoration:none;margin-left:auto;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
+.dot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
+h2{font-size:14px;font-weight:700;margin-top:24px;margin-bottom:8px}
+.etxt{font-size:14px;color:var(--ts);line-height:1.5}
+.etxt a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.etxt a.t{display:inline-block;padding:10px 0 }
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10px;color:var(--tm);font-weight:700}
+.tabbar .on{color:var(--amber)}
+.note{font-size:12px;color:var(--ts);background:#0b0e12;padding:10px 16px;line-height:1.5;border-top:1px dashed var(--border)}
+</style></head><body>
+<script>
+// tiny helper to render placeholder card tiles (static output, no network)
+const hues={W:'80 20 90',U:'250 40 60',B:'300 25 30',R:'30 55 55',G:'150 40 45',C:'260 8 50'};
+function tile(n,c,o={}){
+ const bg=`linear-gradient(160deg,oklch(${hues[c].split(' ')[2]}% .09 ${hues[c].split(' ')[0]}),oklch(22% .03 ${hues[c].split(' ')[0]}))`;
+ const cls='tile'+(o.s==='a'?' avail':'')+(o.s==='n'?' nft':'');
+ return `<button class="${cls}"><div class="art${o.s?' pad2':''}" style="background:${bg}">${n}</div>`+
+ (o.f?'<span class="foil">✨</span>':'')+(o.q>1?`<span class="q">×${o.q}</span>`:'')+
+ (o.s==='a'?'<span class="badge a">✓ Available</span>':'')+(o.s==='n'?'<span class="badge n">⊘ Not for trade</span>':'')+`</button>`;
+}
+const CARDS=[['Sol Ring','C',{s:'a',f:1,q:1}],['Arcane Signet','C',{s:'a',q:3}],['Swords to Plowshares','W',{s:'a'}],
+['Counterspell','U',{}],['Lightning Bolt','R',{q:4}],['Atraxa, Praetors’ Voice','G',{s:'n'}],
+['Cultivate','G',{s:'n',q:2}],['Dark Ritual','B',{}],['Command Tower','C',{f:1,q:2}]];
+function grid(list){return '<div class="grid">'+list.map(c=>tile(c[0],c[1],c[2])).join('')+'</div>'}
+</script>
+
+<!-- 1 -->
+<div class="cap"><b>1 · /collection default</b> · AC-9, 10, 13 · badges bottom-left, qty top-right, foil top-left. Header gets "Trade settings" next to "Re-import" (hidden when empty, AC-20)</div>
+<div class="screen"><div class="pad">
+ <div class="hdr"><div><h1>Collection</h1><p class="sub">Your cards, organized.</p></div>
+  <div class="hbtns"><button class="btn-s trade">⇄ Trade settings</button><button class="btn-s">Re-import</button></div></div>
+ <div class="search">Search cards...</div>
+ <div class="chiprow"><div class="chips"><span class="chip on">All</span><span class="chip">White</span><span class="chip">Foil</span><span class="chip">For trade</span><span class="chip">Not for trade</span></div><span class="sel">Name ▾</span></div>
+ <div id="g1"></div>
+</div></div>
+<script>document.getElementById('g1').outerHTML=grid(CARDS)</script>
+<div class="note">Chip order in the real build: All, White, Blue, Black, Red, Green, Foil, For trade, Not for trade (scrolls horizontally, as today). Not-for-trade tiles are also desaturated and dimmed, so state is carried by icon + text + treatment, not color alone. Chips grow from today's ~30px to 44px tall (touch target rule).</div>
+
+<!-- 2 -->
+<div class="cap"><b>2 · Filter "For trade" active</b> · AC-13</div>
+<div class="screen"><div class="pad" style="padding-top:12px">
+ <div class="chiprow" style="margin-top:0"><div class="chips"><span class="chip">Foil</span><span class="chip on">For trade</span><span class="chip">Not for trade</span></div><span class="sel">Name ▾</span></div>
+ <div id="g2"></div>
+</div></div>
+<script>document.getElementById('g2').outerHTML=grid(CARDS.filter(c=>c[2].s==='a'))</script>
+
+<div class="cap"><b>3 · Filter active, nothing matches</b> · reuses existing "No cards match your filters." copy</div>
+<div class="screen"><div class="pad" style="padding-top:12px">
+ <div class="chiprow" style="margin-top:0"><div class="chips"><span class="chip">Foil</span><span class="chip on">For trade</span><span class="chip">Not for trade</span></div><span class="sel">Name ▾</span></div>
+ <p class="empty">No cards match your filters.</p><p class="empty" style="padding-top:8px;font-size:13px;color:var(--tm)">Tap any card to mark it Available to trade.</p>
+ <div style="height:40px"></div>
+</div></div>
+
+<!-- 4 card sheet -->
+<div class="cap"><b>4 · Card dialog, default</b> · AC-9 · row is Unmarked (selected). Bottom sheet over the grid</div>
+<div class="screen" style="height:560px">
+ <div class="pad" style="padding-top:12px"><div id="g4"></div></div><div class="dim"></div>
+ <div class="sheet">
+  <div class="grab"></div>
+  <div class="row"><div class="thumb" style="background:linear-gradient(160deg,oklch(50% .05 260),oklch(22% .03 260))"></div>
+   <div><div class="sh-title">Sol Ring</div>
+   <div class="meta"><b>Foil</b> · Near Mint<br>Binder: <b>Bulk</b><br>Quantity: <b>1</b></div></div></div>
+  <div class="lbl">Trade status</div>
+  <div class="seg"><button>Available to trade</button><button class="on-u">Unmarked</button><button>Not for trade</button></div>
+  <p class="hint">Applies to all copies in this binder entry.</p>
+  <button class="btn-g" style="margin-top:16px">Close</button>
+ </div></div>
+<script>document.getElementById('g4').outerHTML=grid(CARDS)</script>
+
+<div class="cap"><b>5 · Card dialog, saving</b> · control disabled while the request runs</div>
+<div class="screen" style="height:410px"><div class="dim" style="background:var(--page)"></div>
+ <div class="sheet">
+  <div class="grab"></div>
+  <div class="row"><div class="thumb" style="background:linear-gradient(160deg,oklch(55% .06 150),oklch(22% .03 150))"></div>
+   <div><div class="sh-title">Cultivate</div><div class="meta"><b>Nonfoil</b> · Near Mint<br>Binder: <b>Atraxa Deck</b><br>Quantity: <b>2</b></div></div></div>
+  <div class="lbl">Trade status <span class="spin" style="margin-left:6px"></span></div>
+  <div class="seg dis"><button>Available to trade</button><button>Unmarked</button><button class="on-n">Not for trade</button></div>
+  <button class="btn-g" style="margin-top:16px;opacity:.6">Close</button>
+ </div></div>
+
+<div class="cap"><b>6 · Card dialog, save error</b> · AC-14 · inline message; selection and tile badge revert to previous state (here: Unmarked)</div>
+<div class="screen" style="height:450px"><div class="dim" style="background:var(--page)"></div>
+ <div class="sheet">
+  <div class="grab"></div>
+  <div class="row"><div class="thumb" style="background:linear-gradient(160deg,oklch(55% .06 150),oklch(22% .03 150))"></div>
+   <div><div class="sh-title">Cultivate</div><div class="meta"><b>Nonfoil</b> · Near Mint<br>Binder: <b>No binder</b><br>Quantity: <b>2</b></div></div></div>
+  <div class="lbl">Trade status</div>
+  <div class="seg"><button>Available to trade</button><button class="on-u">Unmarked</button><button>Not for trade</button></div>
+  <div class="err" role="alert"><span>!</span>Couldn't update trade status</div>
+  <button class="btn-g" style="margin-top:16px">Close</button>
+ </div></div>
+
+<div class="cap"><b>7 · First-Available warning (per card)</b> · AC-11 · shown once, only when user has zero Available rows. Cancel leaves row Unmarked. Nothing is written until Confirm</div>
+<div class="screen" style="height:520px"><div class="dim" style="background:oklch(8% .01 260)"></div>
+ <div class="dialog" role="alertdialog">
+  <div class="sh-title">Offer only your Available cards?</div>
+  <p>Right now Trade Match offers your whole collection. Once you mark <b>Sol Ring</b> as Available, Trade Match will now offer <b>only cards you mark Available</b>.</p>
+  <p style="margin-top:6px">You can switch back any time by clearing your Available cards.</p>
+  <div class="btns"><button class="btn-g">Cancel</button><button class="btn-p">Mark Available</button></div>
+ </div></div>
+
+<!-- 8 trade settings -->
+<div class="cap"><b>8 · Trade settings sheet</b> · AC-15 · binders sorted by name, rows + card counts, current flag state summary, 3 actions each. Empty binder names not listed</div>
+<div class="screen" style="height:700px"><div class="pad" style="padding-top:12px"><div id="g8"></div></div><div class="dim"></div>
+ <div class="sheet" style="top:70px;overflow:hidden">
+  <div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><div class="sh-title">Trade settings</div><button class="btn-s" style="min-width:44px;justify-content:center">✕</button></div>
+  <p class="hint" style="margin-top:2px">Mark a whole Manabox binder at once. This updates the cards in each binder right now; cards added later arrive Unmarked.</p>
+  <div class="binder"><div class="nm">Atraxa Deck<span class="state n">All not for trade</span></div><div class="ct">118 entries · 212 cards</div>
+   <div class="acts"><button>Mark all Available</button><button>Mark all Not for trade</button><button class="clr">Clear</button></div></div>
+  <div class="binder"><div class="nm">Bulk<span class="state m">Unmarked</span></div><div class="ct">1,204 entries · 1,860 cards</div>
+   <div class="acts"><button>Mark all Available</button><button>Mark all Not for trade</button><button class="clr">Clear</button></div></div>
+  <div class="binder"><div class="nm">Trade Binder<span class="state a">Mixed · 9 Available</span></div><div class="ct">64 entries · 71 cards</div>
+   <div class="acts"><button>Mark all Available</button><button>Mark all Not for trade</button><button class="clr">Clear</button></div></div>
+ </div></div>
+<script>document.getElementById('g8').outerHTML=grid(CARDS.slice(0,6))</script>
+
+<div class="cap"><b>9 · Trade settings, action running</b> · row-level loading, that binder's other actions + other binders' actions disabled (one request)</div>
+<div class="screen" style="height:470px"><div class="dim" style="background:var(--page)"></div>
+ <div class="sheet" style="top:0;border-radius:0">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><div class="sh-title">Trade settings</div><button class="btn-s" style="min-width:44px;justify-content:center;opacity:.5">✕</button></div>
+  <div class="binder"><div class="nm">Atraxa Deck<span class="state n">All not for trade</span></div><div class="ct">118 entries · 212 cards</div>
+   <div class="acts"><button class="dis">Mark all Available</button><button class="dis">Mark all Not for trade</button><button class="dis clr">Clear</button></div></div>
+  <div class="binder"><div class="nm">Bulk<span class="state m">Unmarked</span></div><div class="ct">1,204 entries · 1,860 cards</div>
+   <div class="acts"><button class="dis">Mark all Available</button><button class="busy"><span class="spin"></span>Saving…</button><button class="dis clr">Clear</button></div></div>
+  <div class="binder"><div class="nm">Trade Binder<span class="state a">Mixed · 9 Available</span></div><div class="ct">64 entries · 71 cards</div>
+   <div class="acts"><button class="dis">Mark all Available</button><button class="dis">Mark all Not for trade</button><button class="dis clr">Clear</button></div></div>
+ </div></div>
+
+<div class="cap"><b>10 · Trade settings, success toast + error</b> · AC-16 (count of entries updated). Toast also appears after Clear (AC-18)</div>
+<div class="screen" style="height:360px"><div class="dim" style="background:var(--page)"></div>
+ <div class="sheet" style="top:0;border-radius:0">
+  <div style="margin-top:12px" class="sh-title">Trade settings</div>
+  <div class="binder"><div class="nm">Atraxa Deck<span class="state n">All not for trade</span></div><div class="ct">118 entries · 212 cards</div>
+   <div class="acts"><button>Mark all Available</button><button>Mark all Not for trade</button><button class="clr">Clear</button></div></div>
+  <div class="binder"><div class="nm">Bulk<span class="state m">Unmarked</span></div><div class="ct">1,204 entries · 1,860 cards</div>
+   <div class="err" style="margin-top:10px"><span>!</span>Couldn't update trade status. Nothing was changed.</div>
+   <div class="acts"><button>Mark all Available</button><button>Mark all Not for trade</button><button class="clr">Clear</button></div></div>
+ </div>
+ <div class="toast"><span style="color:var(--success)">✓</span> 118 entries marked not for trade (212 cards)</div></div>
+
+<div class="cap"><b>11 · First-Available warning (bulk, from a binder)</b> · AC-17 · same confirm, names the binder and the count; nothing written until confirmed</div>
+<div class="screen" style="height:520px"><div class="dim" style="background:oklch(8% .01 260)"></div>
+ <div class="dialog" role="alertdialog">
+  <div class="sh-title">Offer only your Available cards?</div>
+  <p>Marking <b>64 entries in “Trade Binder”</b> as Available means Trade Match will now offer <b>only cards you mark Available</b>, instead of your whole collection.</p>
+  <p style="margin-top:6px">Cards you don't mark will no longer be offered.</p>
+  <div class="btns"><button class="btn-g">Cancel</button><button class="btn-p">Mark 64 Available</button></div>
+ </div></div>
+
+<div class="cap"><b>12 · Trade settings, no binders</b> · AC-19 · no bulk actions</div>
+<div class="screen" style="height:330px"><div class="dim" style="background:var(--page)"></div>
+ <div class="sheet" style="top:0;border-radius:0">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><div class="sh-title">Trade settings</div><button class="btn-s" style="min-width:44px;justify-content:center">✕</button></div>
+  <div style="text-align:center;padding:36px 12px 24px">
+   <div style="width:56px;height:56px;margin:0 auto 12px;border-radius:var(--r-card);background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px">🗂️</div>
+   <p style="font-weight:600">No Manabox binders found in your import</p>
+   <p class="hint" style="max-width:280px;margin:6px auto 0">You can still mark single cards: close this and tap any card in your collection.</p></div>
+ </div></div>
+
+<div class="cap"><b>13 · /collection empty</b> · AC-20 · existing empty state unchanged; no Trade settings, no Re-import</div>
+<div class="screen"><div class="pad">
+ <div class="hdr"><div><h1>Collection</h1><p class="sub">Your cards, organized.</p></div></div>
+ <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:56px 0 40px;text-align:center">
+  <div style="width:64px;height:64px;border-radius:var(--r-card);background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px">📦</div>
+  <div><p style="font-weight:600">No cards yet</p><p class="sub" style="max-width:260px">Import a Manabox CSV to populate your collection.</p></div>
+  <button class="btn-p" style="width:auto;padding:0 20px">Import Collection</button></div>
+</div></div>
+
+<div class="cap"><b>14 · /collection loading</b> · (route is server-rendered today; skeleton only if a loading.tsx is added. Optional)</div>
+<div class="screen"><div class="pad">
+ <div class="hdr"><div><h1>Collection</h1><p class="sub">Your cards, organized.</p></div></div>
+ <div class="skel" style="height:44px;margin-top:16px"></div>
+ <div class="grid"><div class="skel" style="aspect-ratio:5/7"></div><div class="skel" style="aspect-ratio:5/7"></div><div class="skel" style="aspect-ratio:5/7"></div></div>
+</div></div>
+
+<!-- Trade match -->
+<div class="cap"><b>15 · /trades/theo, opt-in mode</b> · AC-23 · one-line offer indicator under the header; "Edit" link goes to /collection. Tiles show offered quantity</div>
+<div class="screen"><div class="pad">
+ <a style="font-size:14px;font-weight:600;color:var(--tm)">← Trades</a>
+ <div class="fr"><div class="av">👤</div><div><div style="font-weight:700">Matches with Theo</div><div style="font-size:14px;color:var(--tm)">@theo</div></div></div>
+ <div class="offer"><span class="dot" style="background:var(--success)"></span><span>Offering: <b>1 card</b> you marked Available</span><a>Edit</a></div>
+ <h2>You have, they want (1)</h2>
+ <div id="m1"></div>
+ <h2>They have, you want (2)</h2>
+ <div id="m2"></div>
+</div></div>
+<script>
+document.getElementById('m1').outerHTML=grid([['Sol Ring','C',{f:1,q:1}]]);
+document.getElementById('m2').outerHTML=grid([['Swords to Plowshares','W',{q:2}],['Counterspell','U',{}]]);
+</script>
+
+<div class="cap"><b>16 · Offer indicator variants</b> · AC-24 · neutral dot = fallback mode (no Available rows). Singular/plural handled in copy</div>
+<div class="screen"><div class="pad" style="padding-top:8px">
+ <div class="offer" style="margin-top:0"><span class="dot" style="background:var(--success)"></span><span>Offering: <b>12 cards</b> you marked Available</span><a>Edit</a></div>
+ <div class="offer"><span class="dot" style="background:var(--amber)"></span><span>Offering: <b>your collection</b> except 2 not-for-trade entries</span><a>Edit</a></div>
+ <div class="offer"><span class="dot" style="background:var(--tm)"></span><span>Offering: <b>your whole collection</b></span><a>Edit</a></div>
+ <div class="offer"><span class="dot" style="background:var(--success)"></span><span>Offering: <b>nothing yet</b>: you marked 0 Available</span><a>Edit</a></div>
+ <div style="height:8px"></div>
+</div>
+<div class="note" style="border-top:0">The 4th variant (Available rows exist but all were then cleared) is the same as "whole collection": offering reverts to fallback. It is shown only to illustrate wording; the build should not produce "nothing yet" unless Q-A below is accepted.</div></div>
+
+<div class="cap"><b>17 · Trade match, empty "You have, they want"</b> · AC-26 · link "mark cards for trade" to /collection (inline link with padded tap area)</div>
+<div class="screen"><div class="pad" style="padding-top:12px">
+ <div class="offer" style="margin-top:0"><span class="dot" style="background:var(--success)"></span><span>Offering: <b>1 card</b> you marked Available</span><a>Edit</a></div>
+ <h2>You have, they want (0)</h2>
+ <p class="etxt">Theo already owns everything you're offering, or you haven't imported a collection yet. Want to offer more? <a class="t">Mark cards for trade</a>.</p>
+ <h2>They have, you want (0)</h2>
+ <p class="etxt">You already own everything Theo has marked for trade, or they haven't synced their collection yet.</p>
+ <h2>You both have extras (0)</h2>
+ <p class="etxt">No shared cards with spare copies on either side yet.</p>
+ <div style="height:16px"></div>
+</div></div>
+<div class="note">Spec calls for link text "mark cards for trade" (lowercase, mid-sentence); shown capitalised here only for readability. The friend-side empty copy changes "has" to "has marked for trade" only when the friend is in opt-in mode; otherwise it is unchanged.</div>
+</body></html>
