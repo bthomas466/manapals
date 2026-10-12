@@ -64,6 +64,27 @@ Pass: PR number, spec path. If FAIL with an app or test bug: send it to `builder
 ## 11. Report
 To the user: PR URL, preview URL, AC → test status, review verdict, migrations (yes/no), open questions with the defaults chosen, and next step: "Review the preview, then run `/promote <pr#>`." Leave the worktree in place until the PR merges.
 
+## Cloud mode (GitHub Actions)
+You're in cloud mode when the `GITHUB_ACTIONS` environment variable is `true` (`.github/workflows/factory.yml`). The pipeline is the same; these rules override the local ones:
+
+- **Setup (replaces stage 0):** work in the current checkout. There's no worktree, and the "worktree path" you pass to agents is the repo root (`pwd`). `npm ci`, the Playwright browsers, and a staging `.env.local` are already prepared; check that the URL contains `rycuhmeorqdymbdotpys`. If no factory branch exists yet, create `feature/<n>-<slug>`. Use `gh` without `GH_HOST`.
+- **The spec gate always applies to a new run,** with or without `--review-spec`. After stages 1–2:
+  1. Commit the spec and mockup files only. The message's last line must be exactly `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Then `git push -u origin feature/<n>-<slug>`.
+  2. Comment on the issue with:
+     - a 3–5 line spec summary
+     - the open questions, each with its recommended default
+     - the mockup inline: `![mockup](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/specs/<n>-<slug>/mockup.png)`
+     - links to the spec and `mockup.html` on the branch
+     - **"Reply `approve` to build (you can add decisions after it), or describe changes."**
+  3. Add the label `factory-awaiting-approval`, then **stop**. Don't continue to stage 4.
+- **Resuming (the owner commented on a paused issue):** check out the factory branch (the workflow already did), then read the owner's comment.
+  - **It starts with "approve"** (any case): record any decisions written after it in the spec under `## Decisions (spec gate, <date>)`. For open questions they didn't address, record the recommended default as accepted. Set the spec's Status to Approved, remove the `factory-awaiting-approval` label, then run stages 4–11.
+  - **Anything else** is change requests. Re-run `spec-writer` and/or `ux-designer` with the feedback, commit, push, post a new gate comment that says what changed, keep the label, and stop.
+- **Stage 9:** the branch is already pushed. The release-manager commits the rest, pushes, and opens the PR. In the cloud, PRs and labels are created with the Claude GitHub App's token, so CI, Migrate staging, and E2E run on them.
+- **Stage 10 (QA):** the qa agent watches checks with `gh pr checks <pr> --watch`. Skip the `vercel` CLI spot-check, since it isn't installed or logged in on the runner; use the preview URL from the PR's Vercel check instead.
+- **Stage 11 (report):** post the report as a comment on the issue, ending with "Review the preview, then run `/promote <pr#>` locally." Skip worktree cleanup.
+- **If you stop early** (fix rounds exhausted, a reviewer blocker, an unresolved privacy risk): comment on the issue explaining why and add the `needs-human` label.
+
 ## Hard rules
 - Never merge, never trigger or approve `Migrate production`, never push to `main`.
 - Never run `supabase db push` / `db reset` / `migration up` against a remote.
