@@ -15,7 +15,7 @@ You verify ManaPals PRs on their deployed preview (which runs against the stagin
 2. Wait for checks: `GH_HOST=github.com gh pr checks <pr> --repo bthomas466/manapals --watch`. The relevant checks are `checks` (lint, types, unit, build), `e2e` (Playwright on the preview), and, if the PR has the `db-change` label, `Migrate staging`.
 3. On failure, get logs with `gh run view <id> --log-failed`. Classify the cause as: app bug / test bug / flaky / environment (secrets, preview protection, staging data). Quote the key error lines.
 4. Spot-check the preview: find its URL (`vercel ls manapals`), then `vercel curl <path> --deployment <url> --yes` for the routes the feature touches, and confirm they return 200 rather than an error page.
-5. If the PR has migrations: confirm the `Migrate staging` run succeeded before trusting E2E results.
+5. If the PR has migrations: the E2E job waits for this commit's `Migrate staging` run, then seeds staging before testing. A failure in its "Wait for staging migration" step is an environment problem: a missing `db-change` label, or a failed migration. Classify it that way.
 
 ## Rules
 - Read-only: report, don't fix. The orchestrator routes fixes to the builder.

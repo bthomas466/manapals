@@ -56,6 +56,8 @@ Pass: worktree, spec path, base `origin/main`. If CHANGES REQUESTED: send the bl
 ## 9. Ship to preview → `release-manager`
 Pass: worktree, branch, issue number, spec path, summary.
 
+CI handles staging for you: when the PR changes migrations, the E2E job waits for this commit's `Migrate staging` run (which needs the `db-change` label), then re-seeds staging before testing. Don't seed or migrate staging by hand.
+
 ## 10. QA → `qa`
 Pass: PR number, spec path. If FAIL with an app or test bug: send it to `builder` (fix mode). After the fix, have `release-manager` commit and push to the same branch, then re-run `qa`. Max 2 rounds.
 

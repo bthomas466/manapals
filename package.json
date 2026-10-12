@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
-    "seed:staging": "tsx --env-file=.env.local scripts/seed-staging.ts"
+    "seed:staging": "tsx --env-file-if-exists=.env.local scripts/seed-staging.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

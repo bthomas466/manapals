@@ -13,7 +13,12 @@ concurrency:
 
 jobs:
   migrate:
-    if: contains(github.event.pull_request.labels.*.name, 'db-change')
+    # Run when db-change is added, or on new commits to a db-change PR — not
+    # when unrelated labels (e.g. factory) are added, which only queues
+    # duplicate runs.
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'db-change') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'db-change')
     runs-on: ubuntu-latest
     environment: db-staging
     env:
