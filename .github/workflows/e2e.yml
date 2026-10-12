@@ -13,17 +13,25 @@ on:
         type: boolean
         default: false
 
-# Serial specs mutate the shared e2e_player on staging; never run two at once.
-concurrency:
-  group: e2e-staging
-  cancel-in-progress: false
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
 
 jobs:
   e2e:
+    # Vercel sends several deployment_status events per preview (pending,
+    # in_progress, success); only the successful Preview one runs.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.deployment_status.state == 'success' &&
        github.event.deployment.environment == 'Preview')
+    # Job-level (not workflow-level) so the skipped runs from the other
+    # deployment events don't cancel or queue real ones. Runs seed and mutate
+    # the shared staging users, so never run two at once.
+    concurrency:
+      group: e2e-staging
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
@@ -34,13 +42,46 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
       E2E_EMAIL: e2e@manapals.test
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      # Staging-only service key, used to re-seed test users before each run.
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # If this commit adds migrations, the preview's code needs them on
+      # staging first: wait for this commit's "Migrate staging" run.
+      - name: Wait for staging migration
+        run: |
+          sha=$(git rev-parse HEAD)
+          if git diff --quiet origin/main..."$sha" -- supabase/migrations; then
+            echo "No migration changes vs main."; exit 0
+          fi
+          labels=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --search "$sha" --json labels --jq '[.[].labels[].name] | join(",")')
+          if [[ ",$labels," != *",db-change,"* ]]; then
+            echo "::error::This commit changes supabase/migrations but its PR has no db-change label, so staging was never migrated. Add the label and re-run."
+            exit 1
+          fi
+          for i in $(seq 1 60); do
+            result=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow migrate-staging.yml --commit "$sha" \
+              --json status,conclusion --jq '[.[] | select(.conclusion != "cancelled" and .conclusion != "skipped")] | .[0] | "\(.status) \(.conclusion)"')
+            echo "Migrate staging: ${result:-not started}"
+            case "$result" in
+              "completed success") exit 0 ;;
+              "completed "*) echo "::error::Migrate staging failed for $sha"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Timed out waiting for Migrate staging"; exit 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Reset the seeded test users so every run starts from known data.
+      - name: Seed staging
+        if: env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: npm run seed:staging
       - run: npx playwright install --with-deps --no-shell chromium
       - run: npx playwright test ${{ inputs.update_snapshots && '--update-snapshots' || '' }}
       - uses: actions/upload-artifact@v4

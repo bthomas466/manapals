@@ -30,4 +30,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - The factory stops at a Vercel preview. Merging, prod migrations (`db-production` approval), and promotion always need the human.
 - Production is **staged**: Vercel's auto-assign of production domains is off, so a merge to `main` builds a production deployment that isn't live until `vercel promote`. Release order: merge → approve prod migration → promote. Roll back with `vercel rollback`.
 - Use `GH_HOST=github.com gh … --repo bthomas466/manapals` for GitHub commands; the machine's default gh host is a different GitHub.
+- E2E in CI waits for the commit's `Migrate staging` run when it changes migrations (the PR needs `db-change`), then re-seeds staging (`SUPABASE_STAGING_SERVICE_ROLE_KEY` secret) before testing. Never seed or migrate staging by hand for a PR.
 - Signed-in E2E: `tests/e2e/authed/*.spec.ts` run as the seeded `e2e_player` (needs `E2E_EMAIL`/`E2E_PASSWORD` in `.env.local` locally; the `E2E_PASSWORD` repo secret in CI). Without them, these specs skip.

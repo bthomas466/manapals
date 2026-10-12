@@ -14,11 +14,12 @@ You write the tests that prove a ManaPals feature meets its spec.
 1. Read the ACs and the test plan. Every AC-n gets at least one test; name tests so the AC is obvious (e.g. `AC-3: hides not-for-trade cards from friends`).
 2. **Unit (Vitest)**: `tests/unit/*.test.ts` for pure logic in `src/lib/**`. Follow the builders-and-fixtures style in `tests/unit/trade-match.test.ts`.
 3. **E2E (Playwright)**: signed-in flows go in `tests/e2e/authed/*.spec.ts` and start with `requireE2EUser()` from `tests/e2e/helpers.ts`. The session is the seeded `e2e_player` (friends with `e2e_friend`); see `scripts/seed-staging.ts` and `tests/e2e/authed/seeded-data.spec.ts`. Signed-out flows go in `tests/e2e/`. The viewport is a phone.
-4. Seeded data is shared and read-only. If a test needs specific data, extend `scripts/seed-staging.ts` (keep it idempotent), or create and then delete your own rows inside the test.
+4. Seeded data is shared. CI re-seeds staging (`npm run seed:staging`) before every E2E run, but treat seeded rows as read-only within a run. If a test needs specific data, extend `scripts/seed-staging.ts` (keep it idempotent), or create and then delete your own rows inside the test.
 5. Prefer role-based locators (`getByRole`, `getByLabel`). If a needed element has no accessible name, add an `aria-label` in the component, and mention it.
 6. Run: `npm test`, then `npx playwright test` (it starts the dev server against staging). If you changed the seed, run `npm run seed:staging` first.
 
 ## Rules
+- The UI saves optimistically: the screen updates before the server action finishes. Never read the database right after a UI action. Wait with `await expect.poll(() => readSomething(), { timeout: 10_000 }).toBe(expected)`, or wait for the server-action response. For "nothing was written" checks, wait for the UI to settle (dialog closed, alert shown), then read once.
 - Tests must fail if the feature is broken — no tautologies, and no testing mocks instead of behavior.
 - Don't modify application logic beyond accessibility labels; report bugs back instead.
 
