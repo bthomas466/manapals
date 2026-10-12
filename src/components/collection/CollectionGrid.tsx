@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { TradeStatus } from "@/lib/trades/flags";
 
 export type CollectionItem = {
   id: number;
@@ -8,6 +9,7 @@ export type CollectionItem = {
   finish: "nonfoil" | "foil" | "etched";
   condition: string;
   binder_name: string;
+  trade_status?: TradeStatus | null;
   card: {
     scryfall_id: string;
     name: string;
@@ -31,15 +33,21 @@ const COLOR_CHIPS: { label: string; code: string | null }[] = [
   { label: "Foil", code: "FOIL" },
 ];
 
+const TRADE_CHIPS = ["For trade", "Not for trade"] as const;
+
 type SortKey = "name" | "set" | "rarity" | "price";
 
 export default function CollectionGrid({
   items,
   emptyState,
+  onSelectItem,
 }: {
   items: CollectionItem[];
   emptyState: React.ReactNode;
+  // When set, tiles are tappable and show trade badges and trade filter chips.
+  onSelectItem?: (item: CollectionItem) => void;
 }) {
+  const tradeEnabled = onSelectItem !== undefined;
   const [activeChip, setActiveChip] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -51,6 +59,8 @@ export default function CollectionGrid({
     const filtered = items.filter((item) => {
       if (!item.card) return false;
       if (query && !item.card.name.toLowerCase().includes(query)) return false;
+      if (activeChip === "For trade" && item.trade_status !== "available") return false;
+      if (activeChip === "Not for trade" && item.trade_status !== "not_for_trade") return false;
       if (chip?.code === "FOIL" && item.finish === "nonfoil") return false;
       if (chip?.code && chip.code !== "FOIL" && !item.card.colors.includes(chip.code)) return false;
       return true;
@@ -87,11 +97,14 @@ export default function CollectionGrid({
 
       <div className="flex items-center gap-2">
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 flex-1">
-          {COLOR_CHIPS.map(({ label }) => (
+          {[...COLOR_CHIPS.map((c) => c.label), ...(tradeEnabled ? TRADE_CHIPS : [])].map((label) => (
             <button
               key={label}
               onClick={() => setActiveChip(label)}
-              className={`shrink-0 rounded-[--radius-chip] border px-3 py-1.5 text-xs font-semibold ${
+              aria-pressed={activeChip === label}
+              className={`shrink-0 rounded-[--radius-chip] border px-3 text-xs font-semibold ${
+                tradeEnabled ? "min-h-11" : "py-1.5"
+              } ${
                 activeChip === label
                   ? "border-amber bg-amber text-page"
                   : "border-border bg-elevated text-text-secondary"
@@ -115,7 +128,7 @@ export default function CollectionGrid({
 
       <div className="grid grid-cols-3 gap-2.5">
         {visibleItems.map((item) => (
-          <CardTile key={item.id} item={item} />
+          <CardTile key={item.id} item={item} onSelect={onSelectItem} />
         ))}
       </div>
 
@@ -126,7 +139,13 @@ export default function CollectionGrid({
   );
 }
 
-function CardTile({ item }: { item: CollectionItem }) {
+function CardTile({
+  item,
+  onSelect,
+}: {
+  item: CollectionItem;
+  onSelect?: (item: CollectionItem) => void;
+}) {
   const card = item.card;
   if (!card) return null;
 
@@ -136,7 +155,14 @@ function CardTile({ item }: { item: CollectionItem }) {
     <div className="relative aspect-[5/7] rounded-[--radius-chip] bg-elevated border border-border overflow-hidden">
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+        <img
+          src={image}
+          alt={card.name}
+          className={`w-full h-full object-cover ${
+            onSelect && item.trade_status === "not_for_trade" ? "grayscale opacity-60" : ""
+          }`}
+          loading="lazy"
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center p-2 text-center">
           <span className="text-[11px] font-semibold text-text-secondary leading-tight">
@@ -155,6 +181,26 @@ function CardTile({ item }: { item: CollectionItem }) {
         <span className="absolute top-1 left-1 rounded-full bg-amber px-1.5 py-0.5 text-[10px] font-bold text-page">
           {item.finish === "foil" ? "✨" : "◆"}
         </span>
+      )}
+
+      {onSelect && item.trade_status === "available" && (
+        <span className="absolute bottom-1 left-1 rounded-full bg-success px-1.5 py-0.5 text-[10px] font-bold text-page">
+          Available
+        </span>
+      )}
+      {onSelect && item.trade_status === "not_for_trade" && (
+        <span className="absolute bottom-1 left-1 rounded-full border border-text-muted bg-page/80 px-1.5 py-0.5 text-[10px] font-bold text-text-secondary">
+          Not for trade
+        </span>
+      )}
+
+      {onSelect && (
+        <button
+          type="button"
+          onClick={() => onSelect(item)}
+          aria-label={`${card.name}, ${item.binder_name || "No binder"}`}
+          className="absolute inset-0 w-full h-full"
+        />
       )}
     </div>
   );

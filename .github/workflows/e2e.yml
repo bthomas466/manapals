@@ -13,6 +13,11 @@ on:
         type: boolean
         default: false
 
+# Serial specs mutate the shared e2e_player on staging; never run two at once.
+concurrency:
+  group: e2e-staging
+  cancel-in-progress: false
+
 jobs:
   e2e:
     if: >-
