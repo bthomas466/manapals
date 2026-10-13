@@ -9,11 +9,13 @@
 # secret), or a local `gh auth` login with -s project.
 set -euo pipefail
 
-# "@me" = the token's own account (bthomas466). Naming the user instead makes gh
-# look up the owner type, which a project-only token can't ("unknown owner type").
-OWNER=@me
 PROJECT_NUMBER=1
 export GH_HOST=github.com
+
+# Raw GraphQL via `gh api` rather than `gh project`: the latter pre-checks
+# for read:org/read:discussion scopes that a `project`-only token lacks,
+# while the API itself needs only `project`. `viewer` = the token's account.
+gql() { gh api graphql "$@"; }
 
 status="${1:?usage: board-sync.sh <status> <url>... [--with-linked-issues]}"; shift
 linked=false
@@ -22,12 +24,13 @@ for arg in "$@"; do
   if [[ "$arg" == "--with-linked-issues" ]]; then linked=true; else urls+=("$arg"); fi
 done
 
-# Resolve project, Status field, and the option for $status.
+# Resolve the project, its Status field, and the option for $status.
 read -r project_id field_id option_id < <(
-  gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --format json |
-    jq -r --arg s "$status" '.fields[] | select(.name == "Status") |
-      [ .id, (.options[] | select(.name == $s) | .id) ] | @tsv' |
-    { read -r fid oid; pid=$(gh project view "$PROJECT_NUMBER" --owner "$OWNER" --format json -q .id); echo "$pid $fid $oid"; }
+  gql -F n="$PROJECT_NUMBER" -f query='
+    query($n: Int!) { viewer { projectV2(number: $n) { id
+      field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } } } } }' |
+    jq -r --arg s "$status" '.data.viewer.projectV2 |
+      [ .id, .field.id, ((.field.options[] | select(.name == $s) | .id) // "") ] | @tsv'
 )
 if [[ -z "${option_id:-}" ]]; then
   echo "Unknown status '$status'" >&2; exit 1
@@ -48,8 +51,16 @@ if $linked; then
 fi
 
 for url in "${urls[@]}"; do
-  item_id=$(gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$url" --format json -q .id)
-  gh project item-edit --id "$item_id" --project-id "$project_id" \
-    --field-id "$field_id" --single-select-option-id "$option_id" >/dev/null
+  content_id=$(gql -f url="$url" -f query='
+    query($url: URI!) { resource(url: $url) { ... on Issue { id } ... on PullRequest { id } } }' \
+    --jq '.data.resource.id')
+  # addProjectV2ItemById is idempotent: it returns the existing item if present.
+  item_id=$(gql -f p="$project_id" -f c="$content_id" -f query='
+    mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } } }' \
+    --jq '.data.addProjectV2ItemById.item.id')
+  gql -f p="$project_id" -f i="$item_id" -f f="$field_id" -f o="$option_id" -f query='
+    mutation($p: ID!, $i: ID!, $f: ID!, $o: String!) {
+      updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f,
+        value: {singleSelectOptionId: $o}}) { projectV2Item { id } } }' >/dev/null
   echo "board: $url → $status"
 done
