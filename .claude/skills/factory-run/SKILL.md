@@ -20,6 +20,8 @@ Report progress with `scripts/factory-event.sh`. It's a no-op if the dashboard i
 
 Send names, numbers and statuses only. Never send prompts, code, or file contents.
 
+The stages below are also described in `.factory/pipeline.yml`, which the dashboard renders. If you change a stage here, change it there too.
+
 ## 0. Set up
 1. Read the issue: `gh issue view <n> --json number,title,body,labels`. Stop if it's closed.
 2. Slug: 3–5 lowercase words from the title, joined with hyphens. Branch: `feature/<n>-<slug>`.
@@ -60,7 +62,7 @@ On failure: send the output to `builder` in fix mode, then re-verify. **At most 
 Note: a new migration isn't on staging yet, so local E2E for schema-dependent features will fail until CI applies it. If that's the only failure, continue and let CI verify.
 
 ## 8. Review → `reviewer`
-Pass: worktree, spec path, base `origin/main`. If CHANGES REQUESTED: send the blockers and should-fixes to `builder`, re-verify (step 7), then re-review once. If blockers remain, stop and report.
+Pass: worktree, spec path, base `origin/main`. If CHANGES REQUESTED: send the blockers and should-fixes to `builder`, re-verify (step 7), then **run `reviewer` again on the new diff. This second review is required**, even for a one-line fix: code the reviewer hasn't seen doesn't ship. If blockers remain after it, stop and report.
 
 ## 9. Ship to preview → `release-manager`
 Pass: worktree, branch, issue number, spec path, summary.

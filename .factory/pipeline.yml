@@ -1,0 +1,88 @@
+# The ManaPals factory pipeline, as run by .claude/skills/factory-run/SKILL.md.
+#
+# Descriptive, not executable: the factory dashboard renders this as its
+# Pipeline view and uses it to place agent activity in a stage. When you change
+# the stages in the skill, change them here in the same PR.
+#
+#   agent       the subagent (.claude/agents/<agent>.md) that does the stage;
+#               omitted when the orchestrator does it itself
+#   gate        who has to act before the pipeline continues
+#   on_fail     the agent that fixes a failure, and how many rounds it gets
+version: 1
+
+stages:
+  - id: 0
+    name: Set up
+    summary: Read the issue, create the branch (and a worktree locally).
+
+  - id: 1
+    name: Spec
+    agent: spec-writer
+    summary: Product spec with testable acceptance criteria and open questions.
+    output: docs/specs/<n>-<slug>.md
+
+  - id: 2
+    name: Mockup
+    agent: ux-designer
+    summary: Static HTML mockup and screenshot in the app's style.
+    output: docs/specs/<n>-<slug>/
+
+  - id: 3
+    name: Spec gate
+    gate: owner
+    summary: >-
+      Always in the cloud: the spec and mockup are posted on the issue and the
+      run pauses until the owner replies "approve" or asks for changes.
+      Locally only with --review-spec.
+
+  - id: 4
+    name: Technical design
+    agent: architect
+    summary: Files to change, migrations with RLS, data flow, test plan.
+
+  - id: 5
+    name: Build
+    agent: builder
+    summary: Implements the technical design.
+
+  - id: 6
+    name: Tests
+    agent: test-writer
+    summary: Vitest unit tests and Playwright E2E for the acceptance criteria.
+
+  - id: 7
+    name: Verify
+    summary: Lint, typecheck, unit tests, build, then Playwright.
+    on_fail: { agent: builder, max_rounds: 3 }
+
+  - id: 8
+    name: Review
+    agent: reviewer
+    summary: Correctness, security, RLS and spec compliance. Fixes are always re-reviewed.
+    on_fail: { agent: builder, max_rounds: 1 }
+
+  - id: 9
+    name: Ship to preview
+    agent: release-manager
+    summary: Commit, push, open the PR with labels; Vercel builds the preview.
+
+  - id: 10
+    name: QA
+    agent: qa
+    summary: Watches CI and E2E on the preview and triages failures.
+    on_fail: { agent: builder, max_rounds: 2 }
+
+  - id: 11
+    name: Report
+    summary: PR, preview, test coverage, review verdict and open questions.
+
+# After the factory: always the owner.
+release:
+  - name: Merge
+    gate: owner
+  - name: Migrate production
+    gate: owner
+    summary: Only when the PR changes migrations; approve the db-production environment.
+  - name: Promote
+    gate: owner
+    summary: /promote <pr#> switches production to the staged deployment.
