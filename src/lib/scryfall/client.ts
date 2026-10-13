@@ -1,3 +1,5 @@
+import { chunk } from "@/lib/chunk";
+
 const SCRYFALL_COLLECTION_URL = "https://api.scryfall.com/cards/collection";
 const SCRYFALL_AUTOCOMPLETE_URL = "https://api.scryfall.com/cards/autocomplete";
 const SCRYFALL_SEARCH_URL = "https://api.scryfall.com/cards/search";
@@ -35,14 +37,6 @@ type CollectionResponse = {
   data: ScryfallCard[];
   not_found: ScryfallIdentifier[];
 };
-
-function chunk<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
