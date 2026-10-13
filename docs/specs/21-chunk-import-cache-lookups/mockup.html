@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260)}
+*{box-sizing:border-box;margin:0}
+body{width:390px;background:var(--page);color:var(--tp);font-family:Manrope,system-ui,sans-serif;padding:12px 0}
+.cap{font-size:11px;color:var(--tm);padding:14px 16px 6px;text-transform:uppercase;letter-spacing:.06em}
+.cap b{color:var(--amber)}
+.dim{height:56px;background:rgba(0,0,0,.6);display:flex;align-items:flex-end}
+.sheet{width:100%;background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px 20px 32px}
+.sheet>*+*{margin-top:16px}
+.hd{display:flex;justify-content:space-between;align-items:center;min-height:44px}
+h2{font-size:18px;font-weight:700}
+.cancel{color:var(--tm);font-size:14px;font-weight:600}
+p{font-size:14px;color:var(--ts);line-height:1.5}
+p strong{color:var(--tp)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border-radius:12px;font-size:14px;font-weight:700;background:var(--amber);color:var(--page)}
+.btn.sec{background:var(--elevated);border:1px solid var(--border);color:var(--ts);font-weight:600}
+.box{border:1px solid var(--border);background:var(--elevated);border-radius:8px;padding:12px}
+.box p{font-size:12px}.box .t{color:var(--tm);font-weight:600;margin-bottom:4px}
+.box.err p{font-size:14px}
+.c{text-align:center;padding:16px 0}
+.bar{height:4px;border-radius:4px;background:var(--elevated);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:40%;background:var(--amber);border-radius:4px}
+</style></head><body>
+
+<div class="cap"><b>State 1</b> · Importing (existing copy, unchanged; AC-9 faster)</div>
+<div class="dim"><div class="sheet">
+ <div class="hd"><h2>Import Collection</h2><span class="cancel">Cancel</span></div>
+ <div class="c"><p>Importing and fetching card data from Scryfall…</p><div class="bar"><i></i></div></div>
+</div></div>
+
+<div class="cap"><b>State 2</b> · Success, large import (same shape as today; AC-1, AC-2)</div>
+<div class="dim"><div class="sheet">
+ <div class="hd"><h2>Import Collection</h2><span class="cancel">Cancel</span></div>
+ <p>Imported <strong>4,792</strong> cards.</p>
+ <div class="box"><p class="t">8 cards couldn't be matched:</p>
+  <p>Lightning Bolt (sld)</p><p>Sol Ring (plst)</p><p>Counterspell (mh2)</p></div>
+ <div class="btn">Done</div>
+</div></div>
+
+<div class="cap"><b>State 3</b> · Success, all matched (unmatched list hidden)</div>
+<div class="dim"><div class="sheet">
+ <div class="hd"><h2>Import Collection</h2><span class="cancel">Cancel</span></div>
+ <p>Imported <strong>4,800</strong> cards.</p>
+ <div class="btn">Done</div>
+</div></div>
+
+<div class="cap"><b>State 4</b> · NEW error: cache lookup failed (AC-8, AC-11). Collection unchanged.</div>
+<div class="dim"><div class="sheet">
+ <div class="hd"><h2>Import Collection</h2><span class="cancel">Cancel</span></div>
+ <div class="box err"><p>Couldn't read card data. Nothing was changed — try again shortly.</p></div>
+ <div class="btn sec">Try another file</div>
+</div></div>
+<div style="height:12px"></div>
+</body></html>
