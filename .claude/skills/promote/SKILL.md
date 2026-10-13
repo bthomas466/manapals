@@ -41,8 +41,9 @@ The `Migrate production` workflow starts on its own and waits for approval. Find
 1. Smoke-test the staged deployment before promoting: `vercel curl /sign-in --deployment <staged-url> --yes` returns the sign-in page.
 2. Promote: `vercel promote <staged-url> --scope bran4 --yes`.
 3. Confirm `vercel inspect manapals.vercel.app` now shows the new deployment, and `curl -s -o /dev/null -w "%{http_code}" https://manapals.vercel.app/sign-in` returns 200.
-4. Ask the user to check the feature on prod themselves (only they can sign in with their real account).
-5. Rollback, if needed: `vercel rollback --scope bran4` puts back the previous deployment instantly. Migrations are additive, so the old code keeps working against the new schema.
+4. Mark it shipped on the board: `scripts/board-sync.sh Shipped <pr-url> --with-linked-issues`. This needs your local `gh` login to have the `project` scope; if it doesn't, tell the user to run `gh auth refresh -h github.com -s project`.
+5. Ask the user to check the feature on prod themselves (only they can sign in with their real account).
+6. Rollback, if needed: `vercel rollback --scope bran4` puts back the previous deployment instantly. Migrations are additive, so the old code keeps working against the new schema.
 
 ## 7. Clean up
 - Remove the run's worktree if one exists: `git worktree remove ../manapals-worktrees/<n>-<slug>`.

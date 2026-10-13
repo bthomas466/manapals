@@ -1,0 +1,106 @@
+name: Board sync
+
+# Moves issues and PRs across the "ManaPals Factory" project board
+# (github.com/users/bthomas466/projects/1) as the factory works.
+# GITHUB_TOKEN can't write to a user-owned project, so this uses the
+# PROJECTS_TOKEN secret (fine-grained PAT: Projects read/write).
+# `/promote` moves items to Shipped locally after the live switch.
+on:
+  issues:
+    types: [opened, reopened, labeled, unlabeled]
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+  workflow_run:
+    workflows: [E2E]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  sync:
+    # Fork PRs get no secrets; workflow_run only matters when E2E passed.
+    if: >-
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.conclusion == 'success')
+    # No concurrency group: GitHub keeps only one *waiting* run per group, so
+    # bursts (an issue created with labels) could drop updates. Events for
+    # one item are minutes apart, except opened+labeled at creation, which
+    # both resolve from the issue's current labels (see issues/opened).
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+      EVENT: ${{ github.event_name }}
+      ACTION: ${{ github.event.action }}
+      LABEL: ${{ github.event.label.name }}
+      ISSUE_URL: ${{ github.event.issue.html_url }}
+      ISSUE_STATE: ${{ github.event.issue.state }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Check token
+        id: token
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PROJECTS_TOKEN secret not set; skipping board sync."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          sparse-checkout: scripts/board-sync.sh
+          sparse-checkout-cone-mode: false
+      - name: Move items
+        if: steps.token.outputs.ok == 'true'
+        run: |
+          sync() { scripts/board-sync.sh "$@"; }
+          case "$EVENT/$ACTION" in
+            issues/opened|issues/reopened)
+              # Created with labels? Use the most advanced column they imply, so
+              # the racing labeled-event run and this one agree.
+              labels=$(gh issue view "$ISSUE_URL" --json labels --jq '[.labels[].name] | join(",")')
+              case ",$labels," in
+                *,needs-human,*)               sync "Needs human" "$ISSUE_URL" ;;
+                *,factory-awaiting-approval,*) sync "Awaiting you" "$ISSUE_URL" ;;
+                *,factory,*)                   sync Spec "$ISSUE_URL" ;;
+                *)                             sync Intake "$ISSUE_URL" ;;
+              esac ;;
+            issues/labeled)
+              case "$LABEL" in
+                factory)                   sync Spec "$ISSUE_URL" ;;
+                factory-awaiting-approval) sync "Awaiting you" "$ISSUE_URL" ;;
+                needs-human)               sync "Needs human" "$ISSUE_URL" ;;
+                *) echo "Label '$LABEL' doesn't move the board." ;;
+              esac ;;
+            issues/unlabeled)
+              # The gate label comes off when the owner approves and the build starts.
+              if [ "$LABEL" = factory-awaiting-approval ] && [ "$ISSUE_STATE" = open ]; then
+                sync Building "$ISSUE_URL"
+              else
+                echo "Unlabel '$LABEL' doesn't move the board."
+              fi ;;
+            pull_request/opened|pull_request/reopened|pull_request/ready_for_review)
+              sync "In review" "$PR_URL" --with-linked-issues ;;
+            pull_request/closed)
+              if [ "$PR_MERGED" = true ]; then
+                sync Merged "$PR_URL" --with-linked-issues
+              else
+                echo "PR closed without merging; leaving the board as is."
+              fi ;;
+            workflow_run/completed)
+              # E2E passed on a preview: find the open PR for that commit.
+              pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --search "$HEAD_SHA" --json url --jq '.[0].url // empty')
+              if [ -n "$pr" ]; then
+                sync "Preview ready" "$pr" --with-linked-issues
+              else
+                echo "No open PR for $HEAD_SHA (e.g. a manual E2E run)."
+              fi ;;
+            *) echo "Nothing to do for $EVENT/$ACTION." ;;
+          esac
