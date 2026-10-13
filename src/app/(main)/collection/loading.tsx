@@ -8,6 +8,7 @@ export default function CollectionLoading() {
         </div>
         <div className="h-9 w-24 rounded-[--radius-btn] bg-elevated" />
       </div>
+      <div className="h-[62px] w-full rounded-[--radius-card] bg-elevated" />
       <div className="h-11 w-full rounded-[--radius-chip] bg-elevated" />
       <div className="flex gap-2 overflow-hidden">
         {Array.from({ length: 6 }, (_, i) => (

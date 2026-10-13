@@ -1,5 +1,6 @@
 import type { CollectionItem } from "@/components/collection/CollectionGrid";
 import type { WishlistItem } from "@/lib/wishlist/queries";
+import { unitPriceUsd } from "@/lib/cards/price";
 
 export type CardSummary = {
   scryfall_id: string;
@@ -44,7 +45,7 @@ export function aggregateByCard(items: CollectionItemWithOracle[]): Map<string, 
         image_normal: item.card.image_normal,
         quantity: item.quantity,
         allFoil: isFoil,
-        price: (isFoil ? (item.card.price_usd_foil ?? item.card.price_usd) : item.card.price_usd) ?? null,
+        price: unitPriceUsd(item.card, item.finish),
       });
     }
   }

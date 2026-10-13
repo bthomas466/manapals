@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useOptimistic, useState } from "react";
 import { applyStatusOverrides, type TradeStatus } from "@/lib/trades/flags";
 import { setBinderTradeStatus, setItemTradeStatus } from "@/lib/trades/actions";
+import { summarizeCollection } from "@/lib/collection/summary";
 import ImportCollectionModal from "./ImportCollectionModal";
+import CollectionSummary from "./CollectionSummary";
 import CollectionGrid, { type CollectionItem } from "./CollectionGrid";
 import CardTradeSheet from "./CardTradeSheet";
 import TradeSettingsSheet from "./TradeSettingsSheet";
@@ -85,6 +87,9 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
   }
 
   const isEmpty = initialItems.length === 0;
+  // Whole-collection totals: derived from initialItems, so search, chips, sort
+  // and trade-flag overrides never change them.
+  const summary = useMemo(() => summarizeCollection(initialItems), [initialItems]);
 
   return (
     <div className="px-4 pt-6 space-y-4 pb-4">
@@ -107,6 +112,8 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
           </div>
         )}
       </div>
+
+      {!isEmpty && <CollectionSummary summary={summary} />}
 
       <CollectionGrid
         items={items}
