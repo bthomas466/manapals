@@ -9,6 +9,25 @@
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-prod-db.sh"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/factory-telemetry.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/factory-telemetry.sh"
+          }
+        ]
       }
     ]
   }
