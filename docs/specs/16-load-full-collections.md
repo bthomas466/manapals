@@ -1,5 +1,5 @@
 # Load full collections over 1,000 cards
-Issue: #16 · PRD refs: US-08, US-09, US-10, US-13, US-17, §2 (Primary users), §4.4, §4.6, §5.1, §5.2, §5.3 · Status: Draft
+Issue: #16 · PRD refs: US-08, US-09, US-10, US-13, US-17, §2 (Primary users), §4.4, §4.6, §5.1, §5.2, §5.3 · Status: Approved
 
 ## Problem
 Three pages read a whole collection with a single unpaged Supabase query:
@@ -189,6 +189,10 @@ Fixture note: the row key is (user_id, card_id, finish, binder_name), so a 1,250
 6. **Dependency on #11 / PR #15.**
    - The summary isn't on this branch yet.
    - **Recommended:** build this independently. AC-6 applies only if #11 has merged first. If #16 lands first, #11's E2E should add the same large-fixture check.
+
+## Decisions (spec gate, 2026-10-13)
+Owner replied `approve` with no changes. Recommended defaults accepted for all open questions:
+Q1 page in code, leave `max_rows`; Q2 no hard cap in v1; Q3 Trade Match batching out of scope (follow-up issue); Q4 import-route caps are a separate issue; Q5 accept mid-load re-import window; Q6 build independently of #11 (AC-6 only if #11 has merged).
 
 ## Design
 Mockup: [mockup.html](16-load-full-collections/mockup.html) · screenshot: [mockup.png](16-load-full-collections/mockup.png) (390px wide, one captioned frame per state). Reuses existing tokens, chip/sort controls, tile and secondary-button styles. The only new UI is the **Show more** button and the error block.
