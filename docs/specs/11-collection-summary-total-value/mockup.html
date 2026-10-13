@@ -1,0 +1,94 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260)}
+*{box-sizing:border-box;margin:0}
+body{width:390px;background:var(--page);color:var(--tp);font-family:Manrope,system-ui,sans-serif}
+.cap{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);background:var(--surface);padding:6px 16px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.scr{padding:24px 16px 16px;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:20px;font-weight:700}.sub{font-size:14px;color:var(--ts);margin-top:4px}
+.btns{display:flex;gap:8px;flex-shrink:0}
+.btn{border:1px solid var(--border);background:var(--elevated);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--ts);min-height:44px;display:flex;align-items:center}
+.sum{background:var(--elevated);border:1px solid var(--border);border-radius:16px;padding:12px 16px}
+.l1{font-size:14px;color:var(--ts);font-weight:600;display:flex;flex-wrap:wrap;gap:0 6px;align-items:baseline}
+.l1 b{color:var(--tp);font-weight:700}
+.val{font-size:22px;font-weight:800;color:var(--amber)}
+.val.na{font-size:15px;color:var(--ts);font-weight:700}
+.l2{font-size:12px;color:var(--tm);margin-top:4px}
+.search{height:44px;border-radius:8px;background:var(--elevated);border:1px solid var(--border);padding:0 12px;display:flex;align-items:center;font-size:14px;color:var(--tm)}
+.search.t{color:var(--tp)}
+.chips{display:flex;gap:8px;overflow:hidden}
+.chip{min-height:44px;min-width:56px;padding:0 14px;border-radius:8px;background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;font-size:12px;font-weight:600;color:var(--ts)}
+.chip.on{background:var(--amber);color:var(--page);border-color:var(--amber)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{aspect-ratio:5/7;border-radius:8px;border:1px solid var(--border);background:linear-gradient(160deg,var(--elevated),var(--surface));padding:6px;font-size:10px;color:var(--ts);display:flex;align-items:flex-end;position:relative}
+.tile i{position:absolute;top:4px;right:4px;font-style:normal;background:var(--page);border-radius:6px;padding:1px 5px;color:var(--tp);font-weight:700}
+.empty{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:48px;text-align:center}
+.ico{width:64px;height:64px;border-radius:16px;background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px}
+.imp{background:var(--amber);color:var(--page);border-radius:12px;padding:12px 20px;font-weight:700;font-size:14px;min-height:44px}
+.sk{background:var(--elevated);border-radius:8px}
+</style></head><body>
+
+<div class="cap">1 · Default (AC-14, 15) — priced, all cards have prices</div>
+<div class="scr">
+ <div class="hd"><header><h1>Collection</h1><p class="sub">Your cards, organized.</p></header><div class="btns"><span class="btn">Trade settings</span><span class="btn">Re-import</span></div></div>
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>1,214 cards</b> · <span>873 unique</span> · <span class="val">~$2,431.18</span></p>
+  <p class="l2">Estimated from Scryfall prices</p>
+ </section>
+ <div class="search">Search cards…</div>
+ <div class="chips"><span class="chip on">All</span><span class="chip">Foil</span><span class="chip">W</span><span class="chip">U</span><span class="chip">B</span></div>
+ <div class="grid"><div class="tile">Sol Ring<i>2</i></div><div class="tile">Arcane Signet</div><div class="tile">Lightning Bolt</div><div class="tile">Counterspell</div><div class="tile">Swords to Plowshares</div><div class="tile">Command Tower</div></div>
+</div>
+
+<div class="cap">2 · Some cards unpriced (AC-18) — extra text in line 2</div>
+<div class="scr" style="padding-top:16px">
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>1,214 cards</b> · <span>873 unique</span> · <span class="val">~$2,431.18</span></p>
+  <p class="l2">Estimated from Scryfall prices · 12 cards have no price</p>
+ </section>
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>5 cards</b> · <span>4 unique</span> · <span class="val">~$12.34</span></p>
+  <p class="l2">Estimated from Scryfall prices · 1 card has no price</p>
+ </section>
+</div>
+
+<div class="cap">3 · No priced cards (AC-9) — value unavailable</div>
+<div class="scr" style="padding-top:16px">
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>5 cards</b> · <span>4 unique</span> · <span class="val na">Value unavailable</span></p>
+  <p class="l2">Estimated from Scryfall prices · 5 cards have no price</p>
+ </section>
+</div>
+
+<div class="cap">4 · Search "Sol Ring" + Foil active (AC-16) — summary unchanged</div>
+<div class="scr" style="padding-top:16px">
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>5 cards</b> · <span>4 unique</span> · <span class="val">~$12.34</span></p>
+  <p class="l2">Estimated from Scryfall prices</p>
+ </section>
+ <div class="search t">Sol Ring</div>
+ <div class="chips"><span class="chip">All</span><span class="chip on">Foil</span><span class="chip">W</span></div>
+ <div class="grid"><div class="tile">Sol Ring<i>1</i></div></div>
+</div>
+
+<div class="cap">5 · Large collection, narrow width (AC-20) — wraps, no overflow</div>
+<div class="scr" style="padding-top:16px">
+ <section class="sum" role="region" aria-label="Collection summary">
+  <p class="l1"><b>12,480 cards</b> · <span>9,310 unique</span> · <span class="val">~$18,204.90</span></p>
+  <p class="l2">Estimated from Scryfall prices · 112 cards have no price</p>
+ </section>
+</div>
+
+<div class="cap">6 · Empty collection (AC-17) — no summary, existing empty state</div>
+<div class="scr">
+ <div class="hd"><header><h1>Collection</h1><p class="sub">Your cards, organized.</p></header></div>
+ <div class="empty"><div class="ico">📦</div><div><p style="font-weight:600">No cards yet</p><p class="sub" style="max-width:260px">Import a Manabox CSV to populate your collection.</p></div><span class="imp">Import Collection</span></div>
+</div>
+
+<div class="cap">7 · Loading — optional summary placeholder in loading.tsx</div>
+<div class="scr" style="padding-top:16px">
+ <div class="sk" style="height:62px;border-radius:16px;animation:none"></div>
+ <div class="sk" style="height:44px"></div>
+</div>
+</body></html>
