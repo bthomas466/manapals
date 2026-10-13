@@ -3,7 +3,9 @@ name: Board sync
 # Moves issues and PRs across the "ManaPals Factory" project board
 # (github.com/users/bthomas466/projects/1) as the factory works.
 # GITHUB_TOKEN can't write to a user-owned project, so this uses the
-# PROJECTS_TOKEN secret (fine-grained PAT: Projects read/write).
+# PROJECTS_TOKEN secret: a classic PAT with only the `project` scope
+# (fine-grained PATs offer no Projects permission for personal accounts;
+# the repo is public, so reading issues/PRs needs no extra scope).
 # `/promote` moves items to Shipped locally after the live switch.
 on:
   issues:
