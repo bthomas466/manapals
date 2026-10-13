@@ -1,0 +1,27 @@
+name: Claude auth check
+
+# Owner-run diagnostic: confirms CLAUDE_CODE_OAUTH_TOKEN works in Actions.
+# The prompt is trivial and reads nothing, so full output is safe to show in
+# this public repo's logs. Run after setting or renewing the token.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true
+          claude_args: >-
+            --model sonnet
+            --max-turns 1
+            --allowedTools ""
+          prompt: Reply with exactly the word OK and nothing else.
