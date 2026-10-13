@@ -60,6 +60,11 @@ jobs:
           EOF
           sed -i 's/^ *//' .env.local
       - uses: anthropics/claude-code-action@v1
+        env:
+          # In Actions, subagents otherwise launch asynchronously; the
+          # orchestrator ends its turn to "wait", which ends the job and
+          # kills them (issue #11 smoke test). Run everything in the foreground.
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: >-

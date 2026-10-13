@@ -67,6 +67,7 @@ To the user: PR URL, preview URL, AC → test status, review verdict, migrations
 ## Cloud mode (GitHub Actions)
 You're in cloud mode when the `GITHUB_ACTIONS` environment variable is `true` (`.github/workflows/factory.yml`). The pipeline is the same; these rules override the local ones:
 
+- **Subagents must finish inside your turn.** In Actions, ending your turn ends the job, and no completion notification will ever arrive. Every `Agent` call must return the agent's actual report before you continue. If an `Agent` call instead returns "Async agent launched" (or anything that isn't the agent's result), don't end your turn to wait. Stop the run, post a status comment on the issue quoting what the Agent tool returned, and add `needs-human`.
 - **Setup (replaces stage 0):** work in the current checkout. There's no worktree, and the "worktree path" you pass to agents is the repo root (`pwd`). `npm ci`, the Playwright browsers, and a staging `.env.local` are already prepared; check that the URL contains `rycuhmeorqdymbdotpys`. If no factory branch exists yet, create `feature/<n>-<slug>`. Use `gh` without `GH_HOST`.
 - **The spec gate always applies to a new run,** with or without `--review-spec`. After stages 1–2:
   1. Commit the spec and mockup files only. The message's last line must be exactly `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Then `git push -u origin feature/<n>-<slug>`.
