@@ -215,3 +215,139 @@ Mockup: [mockup.html](16-load-full-collections/mockup.html) · screenshot: [mock
 Design decisions (not in the spec, so recorded here):
 - The "showing X of Y" hint on Show more and the "All N cards shown" end note are optional additions. Drop them if you prefer the plainest button.
 - Error block copy on trades/profile names the other user ("Couldn't load maya's collection").
+
+## Technical design
+
+Guides read: `01-getting-started/06-fetching-data.md`, `10-error-handling.md` ("model expected errors as return values" rather than throwing to `error.tsx`), `03-api-reference/04-functions/use-router.md`. `next.config.ts` has no `cacheComponents`, and all three pages are already dynamic (`cookies()` through the Supabase server client), so nothing about caching or routing changes. No new routes, route handlers, server actions or `proxy.ts` changes.
+
+### Changes
+| File | Change |
+|------|--------|
+| `src/lib/collection/read.ts` (new) | Pure keyset paging loop `readAllPages`, `COLLECTION_PAGE_SIZE = 1000`, `ReadResult<T>` type, and `collectionPageState` (the result-to-view mapping for AC-15). No Supabase import. |
+| `src/lib/collection/queries.ts` (new) | `getCollectionItems<T>(supabase, userId, columns)`: the shared reader. It binds `readAllPages` to `collection_items` with `.eq("user_id", userId)`, `.gt("id", afterId)`, `.order("id")` and `.limit(pageSize)`. It sits next to `wishlist/queries.ts` and `friends/queries.ts`. |
+| `src/lib/collection/batches.ts` (new) | `RENDER_BATCH_SIZE = 60` (20 rows of the 3-column grid) and the pure `batchWindow(totalMatches, batchesShown)` helper. |
+| `src/components/collection/CollectionLoadError.tsx` (new) | Client component: an inline error block with a `title` prop, fixed body copy, and a **Try again** button that calls `window.location.reload()`. |
+| `src/components/collection/CollectionGrid.tsx` | Adds `batchesShown` state. Renders `matches.slice(0, visibleCount)`. Adds a sentinel with an IntersectionObserver, a **Show more** button and a "Showing X of Y" hint. Search, chip and sort handlers reset the state to batch 1. Filter and sort logic is unchanged. |
+| `src/app/(main)/collection/page.tsx` | Replaces the inline query with `getCollectionItems`. Renders `CollectionLoadError` ("Couldn't load your collection") on error. The `select` columns are unchanged. |
+| `src/app/(main)/trades/[username]/page.tsx` | Deletes `fetchCollectionByUser`. Both sides use `getCollectionItems<CollectionItemWithOracle>` inside the existing `Promise.all`. If either side fails, the offer line and the three `MatchSection`s are replaced by `CollectionLoadError`. The back link and friend header stay. |
+| `src/app/(main)/u/[username]/page.tsx` | Replaces the inline query with `getCollectionItems`. This still runs only when `canViewCollection`. On error, `CollectionLoadError` ("Couldn't load {display_name}'s collection") takes the grid's place. The wishlist section is unchanged. |
+| `tests/unit/collection-read.test.ts` (new) | AC-1 to AC-4, AC-15, AC-19 |
+| `tests/unit/collection-batches.test.ts` (new) | AC-14 |
+| `tests/unit/collection-readers-wiring.test.ts` (new) | AC-8 (source-level assertion), AC-16 (static render of `CollectionLoadError`) |
+| `tests/e2e/authed/large-collection.serial.spec.ts` (new) | AC-5, AC-7, AC-9 to AC-12, AC-17, AC-18 (UI part) |
+| `vitest.config.ts` | Only if needed: `esbuild: { jsx: "automatic" }`. Vite should already pick up `"jsx": "react-jsx"` from `tsconfig.json` when a `.ts` test imports a `.tsx` component. Add this only if the AC-16 test fails to transform. |
+
+Untouched: `CollectionView.tsx` (it already passes `items` through), `src/lib/trades/match.ts`, `scripts/seed-staging.ts`, `tests/e2e/supabase.ts`, `supabase/config.toml`, `loading.tsx`.
+
+### Schema
+**No migration.** RLS policies, columns and indexes are unchanged. Every page request runs under the viewer's session through the existing `createClient()` (never the admin client), so the `collection_items` select policies apply to each page exactly as they do today.
+
+A composite `(user_id, id)` index would make each keyset page an index range scan. It is not needed at realistic sizes (see Risks), and the spec rules out migrations, so it is left as a follow-up.
+
+### Data flow
+- **Reader (server only).** `readAllPages(fetchPage, pageSize)`:
+  1. Starts with `afterId = null`.
+  2. Each call does `fetchPage(afterId, pageSize)`, which returns `{ data, error }` in the PostgREST shape.
+  3. If `error` is set or `data` is null, it returns `{ ok: false, error: message }` and discards the rows read so far (AC-4).
+  4. Otherwise it appends the rows. If `data.length < pageSize` it stops (this covers empty, short, and the trailing empty page after an exact multiple, AC-2 and AC-3). If not, it sets `afterId = data.at(-1).id` and loops.
+  5. Guard: if a page's last `id` is not greater than `afterId`, it returns an error instead of looping forever.
+
+  It returns `{ ok: true, rows }`.
+
+  Keyset paging (`id > afterId`) is used instead of `.range()` offsets. There is no OFFSET cost, and each page is disjoint by construction, which gives AC-1's "no duplicates".
+- **Page size and `max_rows`.** `COLLECTION_PAGE_SIZE = 1000` must be **less than or equal to** PostgREST `max_rows`, because the loop's stop condition is "short page". Add a comment at the constant explaining this.
+- **Binding.** `getCollectionItems<T extends { id: number }>(supabase: SupabaseClient, userId: string, columns: string): Promise<ReadResult<T>>`:
+  - It always applies `.eq("user_id", userId)` (AC-19). RLS alone would also return friends' and public rows.
+  - Each page keeps its existing column string, passed as `columns`. Typing uses `.returns<T[]>()`, consistent with the current code.
+  - On error it logs `console.error("collection read failed", { userId, message })` on the server only.
+- **`/collection` (server component).** `getUser` → `getCollectionItems<CollectionItem>` → `collectionPageState(result)`:
+  - `{ kind: "error" }` renders the page padding wrapper with an `h1` "Collection" and `CollectionLoadError`.
+  - `{ kind: "ready", items }` renders `<CollectionView initialItems={items} />` as today.
+  - The empty collection still flows through `CollectionGrid`'s `emptyState` (AC-17). If #11 has merged, its summary runs over `items`, which is now complete (AC-6), with no logic change.
+- **`/trades/[username]` (server component).** The friendship check is unchanged. Then `Promise.all([getCollectionItems(viewer), getCollectionItems(friend), getWishlistItems×2])`.
+  - If either collection result is `!ok`, render `CollectionLoadError`. Use "Couldn't load your collection" when the viewer's read failed, otherwise "Couldn't load {display_name}'s collection".
+  - Otherwise `computeTradeMatches` runs over the full arrays, unchanged.
+  - Only the computed `CardSummary` lists go to HTML. Raw rows are never sent to the client here.
+- **`/u/[username]` (server component).** Same pattern as `/collection`, behind the existing `canViewCollection` gate. With no access, no read is issued (AC-18).
+- **`CollectionGrid` (client).**
+  - `const matches = useMemo(filter + sort over all items)`: the existing `visibleItems`, renamed for clarity.
+  - `const [batchesShown, setBatchesShown] = useState(1)`, then `const { visibleCount, hasMore } = batchWindow(matches.length, batchesShown)`.
+  - The search `onChange`, chip `onClick` and sort `onChange` each call `setBatchesShown(1)` along with their own setter. This happens in the event handlers, not in an effect (AC-12).
+  - A change to `items` (for example a trade-flag override from `CollectionView`) does **not** reset the batch, so tapping a tile deep in the list doesn't collapse it.
+  - **Load on scroll:** when `hasMore`, render `<div ref={sentinelRef} aria-hidden />` after the grid. A `useEffect` keyed on `[hasMore, batchesShown]` creates an `IntersectionObserver` with `rootMargin: "0px 0px 400px 0px"`, and calls `setBatchesShown(b => b + 1)` when the sentinel intersects. It disconnects on cleanup. Re-creating the observer after each batch re-checks a sentinel that is still in view.
+  - If `IntersectionObserver` is undefined, the button alone handles loading.
+  - **Show more:** when `hasMore`, render a `<button type="button">Show more</button>`. It is full width, `min-h-12`, in the existing secondary style (`rounded-[--radius-btn] border border-border bg-elevated text-sm font-semibold text-text-secondary`), with a small "Showing {visibleCount} of {matches.length}" line above it. The button's accessible name stays exactly "Show more".
+  - The "All N cards shown" end note from the mockup is dropped, so small collections stay pixel-identical (AC-13).
+  - "No cards match your filters." is unchanged.
+- **`CollectionLoadError` (client, `"use client"`).**
+  - `role="alert"` block with the elevated card styling, the title, and the body "Something went wrong loading cards. Nothing was changed."
+  - A **Try again** button (`min-h-11`, secondary style) calls `window.location.reload()`. This matches the spec's "reloads the page" literally. It also avoids `useRouter`, which would throw outside an app-router tree and block the static render test.
+
+### Logic placement
+- Pure, unit-tested logic:
+  - `src/lib/collection/read.ts`: `readAllPages`, `collectionPageState`, `COLLECTION_PAGE_SIZE`.
+  - `src/lib/collection/batches.ts`: `batchWindow`, `RENDER_BATCH_SIZE`.
+- Thin Supabase binding: `src/lib/collection/queries.ts`. It is unit-tested with a recording fake query builder.
+- Pages only call the reader, branch on the result and render. `computeTradeMatches` and the filter/sort code are unchanged.
+
+`batchWindow(total, batchesShown, size = RENDER_BATCH_SIZE)` returns `{ visibleCount: Math.min(total, batchesShown * size), hasMore: total > batchesShown * size }`.
+
+### Test plan
+**Vitest** (`tests/unit/*.test.ts`, node env):
+
+| AC | Test |
+|----|------|
+| AC-1 | Fake keyset fetcher over 2,345 rows, at most 1,000 per call → 2,345 rows, ascending ids, `new Set(ids).size === 2345`, 3 calls. |
+| AC-2 | 2,000 rows → 2,000 rows, exactly 3 calls (1,000 / 1,000 / 0). |
+| AC-3 | 0 rows → `[]`, 1 call. 7 rows → 7 rows, 1 call. |
+| AC-4 | Page 1 ok, page 2 `{ data: null, error }` → `{ ok: false }`, and no rows are exposed. Extra case: a non-advancing fetcher (same page twice) → `{ ok: false }`, and the loop terminates. |
+| AC-15 | `collectionPageState({ ok: false })` → `{ kind: "error" }`. `({ ok: true, rows: [] })` → `{ kind: "ready", items: [] }` (empty is not an error). |
+| AC-19 | Fake chainable client records `from`, `select`, `eq`, `gt`, `order` and `limit` per page. Over a 3-page run, every page has `from("collection_items")`, `eq("user_id", <given id>)` and `order("id")`. Page 1 has no `gt`, and pages 2+ have `gt("id", lastIdOfPreviousPage)`. The `columns` string is passed through unchanged. |
+| AC-14 | `batchWindow`: (0,1) → {0,false}. (B,1) → {B,false}. (B+1,1) → {B,true}. (B+1,2) → {B+1,false}. (3B−1,2) → {2B,true}. (3B−1,3) → {3B−1,false}. Also asserts `1 <= RENDER_BATCH_SIZE <= 200`. |
+| AC-8 | Reads the three page files with `fs`. Asserts none contains `from("collection_items")` and each contains `getCollectionItems(`. |
+| AC-16 | `renderToStaticMarkup(createElement(CollectionLoadError, { title: "Couldn't load your collection" }))` contains the title, `role="alert"`, and a `<button` with "Try again". The apostrophe is escaped as `&#x27;`, so the test asserts on the escaped form or decodes it first. The trades and `/u` variants are the same component with a different title, so one more render covers "Couldn't load E2E Friend's collection". |
+
+**Playwright** (`tests/e2e/authed/large-collection.serial.spec.ts`, `authed-serial` project). It snapshots in `beforeAll` and restores in `afterAll`, like `trade-flags.serial.spec.ts`.
+
+- **Fixture `big`:** 1,250 rows built in a loop through `setCollection`:
+  - Rows 1 to 1,248: `CARDS.solRing`, nonfoil, binder `Bulk 0001`…`Bulk 1248`.
+  - Row 1,249: `CARDS.swords`, nonfoil, `Bulk 1249`.
+  - Row 1,250: `CARDS.cultivate`, **foil**, `Bulk 1250`.
+  - All rows have quantity 1 and no flags.
+- **Precondition, run once after `setCollection`:** `replace_collection_items` does not guarantee insert order. With the E2E client, look up the `id`s of the Swords and Cultivate rows. Assert `count(id < thatId) >= 1000` with `select("id", { count: "exact", head: true }).eq("user_id", userId).lt("id", id)`. This proves both rows sit past the old cap.
+- **Tile locator:** `page.getByRole("button", { name: /, Bulk \d{4}$/ })`, the same overlay-button pattern as `anyTile` in the existing spec.
+
+| AC | E2E check |
+|----|-----------|
+| AC-5 | `big` fixture, `/collection`, fill search "Cultivate" → exactly 1 tile named "Cultivate, Bulk 1250". |
+| AC-6 | Only if #11 has merged on the branch: the summary total reads "1,250". If not, leave it as a `test.skip` with a reason. |
+| AC-7 | `big` fixture, `/trades/e2e_friend` → heading "They have, you want (0)" and no `img` "Swords to Plowshares" in that section. The seeded friend offers only Swords (opt-in), and the seeded player wishlists it any-printing. Before the fix, this showed (1). |
+| AC-9 | `big` fixture, `/collection` → tile count `<= RENDER_BATCH_SIZE` (imported from `src/lib/collection/batches`), and "Show more" is visible. |
+| AC-10 | Scroll with `window.scrollTo(0, document.body.scrollHeight)` → poll until tile count > B. Record n, then trigger **Show more** with `locator.dispatchEvent("click")`, so Playwright's scroll-into-view doesn't also fire the observer → count is `<= n + B` and `> n`. Keep dispatching until "Show more" has count 0 → tile count is 1,250. |
+| AC-11 | `big` fixture, fresh load, tap "Foil" chip → 1 tile, and "Show more" has count 0. |
+| AC-12 | Load more than B tiles (one dispatched click). Then each of: change the search ("Sol"), tap a chip ("All" → "Red" → "All"), and change the sort select → tile count `<= B` after each. |
+| AC-13 | Existing `seeded-data.spec.ts` (seeded collection has 4 rows) passes unchanged. Add one assertion there: "Show more" has count 0 on `/collection`. |
+| AC-17 | `setCollection([])`, `/collection` → "No cards yet" visible. "Show more" and "Couldn't load" have count 0. |
+| AC-18 | `/u/e2e_stranger` → "Only friends can see this collection" visible, and "Show more" has count 0. This can go in `seeded-data.spec.ts` since it is read-only. The existing `trade-flags-rls.serial.spec.ts` AC-27 stays as the row-level check. |
+
+**Seed data:** no change to `scripts/seed-staging.ts`. The large fixture is written per-test through `setCollection`, which reuses the seeded cards with distinct binder names.
+
+### Risks
+1. **Silent truncation if `max_rows` drops below the page size.** The loop stops on a short page. If a project's `max_rows` were set below 1,000, every read would quietly stop after the first page, which is the same bug as today. Today both hosted projects and `config.toml` use 1,000. Mitigations:
+   - A comment on `COLLECTION_PAGE_SIZE` that ties it to `max_rows`.
+   - Never raise the constant without raising `max_rows`.
+   
+   (Lowering the constant is always safe.)
+2. **Privacy: RLS is broader than the page.** The `collection_items` select policies let a viewer read friends' and public users' rows, so the `user_id` filter is what keeps each page to one user. It is enforced in the single binding and pinned by AC-19 for every page, not just the first. Nothing uses the admin client. `/u/[username]` still reads nothing unless `canViewCollection`. For public profiles, any signed-in user now receives every row rather than 1,000. These are the same columns and visibility as today, but the volume is larger.
+3. **Query cost on large collections.** There is only a `user_id` index; there is no `(user_id, id)` index. Each keyset page scans the user's rows through `collection_items_user_id_idx` and does a top-N sort, and the RLS policy is evaluated per row (owner OR `are_friends` exists). The total work is roughly O(n²/1000):
+   - About 3 pages and well under 100 ms of database time for 3,000 rows.
+   - About 20 sequential round trips for 20,000 rows (accepted under Q2).
+   
+   Trade Match reads both users in parallel, but each user's pages are sequential. Follow-up, if needed: an additive `create index concurrently collection_items_user_id_id_idx on public.collection_items (user_id, id)` migration.
+4. **Payload and client CPU.** `/collection` and `/u` serialize every row into the RSC payload (about 1 MB per 3,000 rows, accepted under Q2). Filter and sort re-run over the full array on each keystroke, which is fine at a few thousand rows. The DOM is capped at B·k tiles. Trade Match sends only computed summaries. Its sections are still unbatched (Q3, follow-up).
+5. **Mid-load re-import (Q5, accepted).** `replace_collection_items` re-inserts with new, higher ids. A keyset read that overlaps it can return old page-1 rows followed by new rows, which double-counts some cards until the next reload. There are no duplicate ids, and the reader never loops.
+6. **E2E fixture fragility.**
+   - Insert order from `replace_collection_items` is not guaranteed, hence the precondition check.
+   - `snapshotCollection` itself is still capped at 1,000 (out of scope). If a local run crashes after the fixture is written, the next run's snapshot of the 1,250 leftover rows would restore only 1,000. CI re-seeds staging before every E2E run, so this affects only local runs. Run `npm run seed:staging` locally to recover.
+   - The observer could fire alongside a real tap, which is why the tap path in AC-10 and AC-12 uses `dispatchEvent`.
+7. **Migration safety:** none (no schema change).

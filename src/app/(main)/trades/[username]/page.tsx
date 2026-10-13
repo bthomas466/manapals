@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
+import CollectionLoadError from "@/components/collection/CollectionLoadError";
+import { getCollectionItems } from "@/lib/collection/queries";
 import { getWishlistItems } from "@/lib/wishlist/queries";
 import {
   computeTradeMatches,
@@ -10,20 +12,8 @@ import {
   type CollectionItemWithOracle,
 } from "@/lib/trades/match";
 
-async function fetchCollectionByUser(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string
-): Promise<CollectionItemWithOracle[]> {
-  const { data } = await supabase
-    .from("collection_items")
-    .select(
-      "id, quantity, finish, condition, binder_name, trade_status, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
-    )
-    .eq("user_id", userId)
-    .order("id")
-    .returns<CollectionItemWithOracle[]>();
-  return data ?? [];
-}
+const TRADE_COLLECTION_COLUMNS =
+  "id, quantity, finish, condition, binder_name, trade_status, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)";
 
 export default async function TradeMatchPage({
   params,
@@ -59,30 +49,19 @@ export default async function TradeMatchPage({
 
   if (!friendship) redirect("/trades");
 
-  const [viewerItems, friendItems, viewerWishlist, friendWishlist] = await Promise.all([
-    fetchCollectionByUser(supabase, user.id),
-    fetchCollectionByUser(supabase, friendProfile.user_id),
+  const [viewerResult, friendResult, viewerWishlist, friendWishlist] = await Promise.all([
+    getCollectionItems<CollectionItemWithOracle>(supabase, user.id, TRADE_COLLECTION_COLUMNS),
+    getCollectionItems<CollectionItemWithOracle>(
+      supabase,
+      friendProfile.user_id,
+      TRADE_COLLECTION_COLUMNS
+    ),
     getWishlistItems(supabase, user.id),
     getWishlistItems(supabase, friendProfile.user_id),
   ]);
 
-  const { youHaveTheyWant, theyHaveYouWant, bothHaveExtras } = computeTradeMatches({
-    viewerItems,
-    friendItems,
-    viewerWishlist,
-    friendWishlist,
-  });
-
-  const offer = describeOffer(viewerItems);
-  const offerDot =
-    offer.mode === "opt_in"
-      ? "bg-success"
-      : offer.notForTradeCount > 0
-        ? "bg-amber"
-        : "bg-text-muted";
-
-  return (
-    <div className="px-4 pt-6 space-y-6 pb-4">
+  const header = (
+    <>
       <div className="flex items-center gap-3">
         <Link href="/trades" className="text-sm font-semibold text-text-muted">
           ← Trades
@@ -103,6 +82,45 @@ export default async function TradeMatchPage({
           <p className="text-sm text-text-muted truncate">@{friendProfile.username}</p>
         </div>
       </div>
+    </>
+  );
+
+  if (!viewerResult.ok || !friendResult.ok) {
+    return (
+      <div className="px-4 pt-6 space-y-6 pb-4">
+        {header}
+        <CollectionLoadError
+          title={
+            !viewerResult.ok
+              ? "Couldn't load your collection"
+              : `Couldn't load ${friendProfile.display_name}'s collection`
+          }
+        />
+      </div>
+    );
+  }
+
+  const viewerItems = viewerResult.rows;
+  const friendItems = friendResult.rows;
+
+  const { youHaveTheyWant, theyHaveYouWant, bothHaveExtras } = computeTradeMatches({
+    viewerItems,
+    friendItems,
+    viewerWishlist,
+    friendWishlist,
+  });
+
+  const offer = describeOffer(viewerItems);
+  const offerDot =
+    offer.mode === "opt_in"
+      ? "bg-success"
+      : offer.notForTradeCount > 0
+        ? "bg-amber"
+        : "bg-text-muted";
+
+  return (
+    <div className="px-4 pt-6 space-y-6 pb-4">
+      {header}
 
       <p className="flex items-center gap-2 text-sm text-text-secondary">
         <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${offerDot}`} />

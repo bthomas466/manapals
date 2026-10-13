@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TradeStatus } from "@/lib/trades/flags";
+import { batchWindow } from "@/lib/collection/batches";
 
 export type CollectionItem = {
   id: number;
@@ -52,7 +53,7 @@ export default function CollectionGrid({
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
 
-  const visibleItems = useMemo(() => {
+  const matches = useMemo(() => {
     const query = search.trim().toLowerCase();
     const chip = COLOR_CHIPS.find((c) => c.label === activeChip);
 
@@ -81,6 +82,24 @@ export default function CollectionGrid({
     });
   }, [items, search, activeChip, sortKey]);
 
+  const [batchesShown, setBatchesShown] = useState(1);
+  const { visibleCount, hasMore } = batchWindow(matches.length, batchesShown);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Re-created after each batch so a sentinel that is still in view loads the next one.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!hasMore || !sentinel || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setBatchesShown((b) => b + 1);
+      },
+      { rootMargin: "0px 0px 400px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, batchesShown]);
+
   if (items.length === 0) {
     return <>{emptyState}</>;
   }
@@ -90,7 +109,10 @@ export default function CollectionGrid({
       <input
         type="search"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setBatchesShown(1);
+        }}
         placeholder="Search cards..."
         className="w-full rounded-[--radius-chip] border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
       />
@@ -100,7 +122,10 @@ export default function CollectionGrid({
           {[...COLOR_CHIPS.map((c) => c.label), ...(tradeEnabled ? TRADE_CHIPS : [])].map((label) => (
             <button
               key={label}
-              onClick={() => setActiveChip(label)}
+              onClick={() => {
+                setActiveChip(label);
+                setBatchesShown(1);
+              }}
               aria-pressed={activeChip === label}
               className={`shrink-0 rounded-[--radius-chip] border px-3 text-xs font-semibold ${
                 tradeEnabled ? "min-h-11" : "py-1.5"
@@ -116,7 +141,10 @@ export default function CollectionGrid({
         </div>
         <select
           value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          onChange={(e) => {
+            setSortKey(e.target.value as SortKey);
+            setBatchesShown(1);
+          }}
           className="shrink-0 rounded-[--radius-chip] border border-border bg-elevated px-2 py-1.5 text-xs font-semibold text-text-secondary"
         >
           <option value="name">Name</option>
@@ -127,12 +155,30 @@ export default function CollectionGrid({
       </div>
 
       <div className="grid grid-cols-3 gap-2.5">
-        {visibleItems.map((item) => (
+        {matches.slice(0, visibleCount).map((item) => (
           <CardTile key={item.id} item={item} onSelect={onSelectItem} />
         ))}
       </div>
 
-      {visibleItems.length === 0 && (
+      {hasMore && (
+        <>
+          <div ref={sentinelRef} aria-hidden="true" />
+          <div className="space-y-2">
+            <p className="text-xs text-text-muted text-center">
+              Showing {visibleCount} of {matches.length}
+            </p>
+            <button
+              type="button"
+              onClick={() => setBatchesShown((b) => b + 1)}
+              className="min-h-12 w-full rounded-[--radius-btn] border border-border bg-elevated text-sm font-semibold text-text-secondary"
+            >
+              Show more
+            </button>
+          </div>
+        </>
+      )}
+
+      {matches.length === 0 && (
         <p className="text-sm text-text-muted text-center pt-8">No cards match your filters.</p>
       )}
     </>
