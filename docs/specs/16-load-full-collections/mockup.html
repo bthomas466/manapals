@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elev:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--ok:oklch(70% .15 145);--t1:oklch(96% .005 90);--t2:oklch(65% .02 260);--t3:oklch(50% .015 260)}
+*{box-sizing:border-box;margin:0}
+body{width:390px;background:#000;color:var(--t1);font-family:Manrope,system-ui,sans-serif}
+.cap{background:#2a1f55;color:#d8ccff;font-size:11px;font-weight:700;padding:6px 16px;letter-spacing:.03em}
+.scr{background:var(--page);padding:24px 16px 16px;display:flex;flex-direction:column;gap:16px;margin-bottom:6px}
+h1{font-size:20px;font-weight:700}.sub{font-size:14px;color:var(--t2)}
+.sum{font-size:12px;color:var(--t2);margin-top:4px}.sum b{color:var(--t1)}
+.hd{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.btn{border:1px solid var(--border);background:var(--elev);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--t2);min-height:44px;display:flex;align-items:center;justify-content:center}
+.btns{display:flex;gap:8px}
+.search{border:1px solid var(--border);background:var(--elev);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t3);min-height:44px}
+.search.f{color:var(--t1)}
+.row{display:flex;gap:8px;align-items:center}.chips{display:flex;gap:8px;overflow:hidden;flex:1}
+.chip{flex:none;border:1px solid var(--border);background:var(--elev);color:var(--t2);border-radius:8px;padding:0 12px;min-height:44px;display:flex;align-items:center;font-size:12px;font-weight:600}
+.chip.on{background:var(--amber);border-color:var(--amber);color:var(--page)}
+.sel{border:1px solid var(--border);background:var(--elev);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600;color:var(--t2);min-height:44px;display:flex;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{position:relative;aspect-ratio:5/7;border-radius:8px;border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:11px;font-weight:600;color:var(--t2);background:linear-gradient(160deg,var(--elev),var(--surface))}
+.q{position:absolute;top:4px;right:4px;background:oklch(13% .01 260/.8);border-radius:99px;padding:2px 6px;font-size:10px;font-weight:700;color:var(--t1)}
+.fo{position:absolute;top:4px;left:4px;background:var(--amber);color:var(--page);border-radius:99px;padding:2px 6px;font-size:10px;font-weight:700}
+.av{position:absolute;bottom:4px;left:4px;background:var(--ok);color:var(--page);border-radius:99px;padding:2px 6px;font-size:10px;font-weight:700}
+.more{width:100%;min-height:48px;border:1px solid var(--border);background:var(--elev);border-radius:12px;font-size:14px;font-weight:600;color:var(--t1);display:flex;align-items:center;justify-content:center;gap:8px}
+.more small{color:var(--t3);font-weight:500;font-size:12px}
+.end{text-align:center;font-size:12px;color:var(--t3)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding-top:48px}
+.ico{width:64px;height:64px;border-radius:16px;background:var(--elev);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px}
+.p{font-weight:600}.s{font-size:14px;color:var(--t2);max-width:280px}
+.cta{background:var(--amber);color:var(--page);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;min-height:44px;display:flex;align-items:center}
+.err{border:1px solid var(--border);background:var(--surface);border-radius:16px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.err .ico{border-color:oklch(45% .15 25);color:#ef4444;font-size:28px}
+.sk{background:var(--elev);border-radius:8px;animation:none}
+.note{font-size:12px;color:var(--t3);text-align:center}
+.mute{opacity:.9}
+.nav{height:56px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:11px;color:var(--t3);margin:0 -16px -16px}
+.nav .a{color:var(--amber)}
+.sec{font-size:14px;font-weight:700;display:flex;justify-content:space-between}.sec span{color:var(--t3);font-weight:500}
+.av2{width:44px;height:44px;border-radius:99px;background:var(--elev);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--amber)}
+</style></head><body>
+<script>
+const N=["Lightning Bolt","Sol Ring","Counterspell","Llanowar Elves","Cultivate","Swords to Plowshares","Sheoldred, the Apocalypse","Ragavan, Nimble Pilferer","Rhystic Study","Birds of Paradise","Dark Ritual","Path to Exile","Brainstorm","Eternal Witness","Mana Crypt","Arcane Signet","Command Tower","Demonic Tutor"];
+function tiles(n,o={}){let h='';for(let i=0;i<n;i++){const nm=o.names?o.names[i]:N[i%N.length];h+=`<div class="tile">${nm}${o.foil?'<span class="fo">✨</span>':(i%7==2?'<span class="fo">✨</span>':'')}${i%5==1&&!o.nq?'<span class="q">×2</span>':''}${o.av&&i%2==0?'<span class="av">Available</span>':''}</div>`}return `<div class="grid">${h}</div>`}
+function head(sum){return `<div class="hd"><div><h1>Collection</h1><p class="sub">Your cards, organized.</p>${sum}</div><div class="btns"><div class="btn">Import</div></div></div>`}
+function ctl(q,chip){const c=["All","White","Blue","Black","Red","Green","Foil"];return `<div class="search ${q?'f':''}">${q||'Search cards...'}</div><div class="row"><div class="chips">${c.map(x=>`<div class="chip ${x==chip?'on':''}">${x}</div>`).join('')}</div><div class="sel">Name ▾</div></div>`}
+const nav='<div class="nav"><span class="a">Collection</span><span>Wishlist</span><span>Trades</span><span>Friends</span><span>Profile</span></div>';
+const S=[];
+S.push(['1 · /collection, first render, 2,400 rows (AC-9). Batch B tiles in DOM + Show more',`${head('<p class="sum"><b>3,105</b> cards · <b>$4,812</b></p>')}${ctl('','All')}${tiles(15)}<div class="more">Show more <small>· showing 60 of 2,400</small></div>${nav}`]);
+S.push(['2 · Scrolling / tapping appends next batch, no spinner (AC-10)',`${ctl('','All')}${tiles(9)}<div class="note">… 60 tiles already rendered …</div>${tiles(6,{names:["Mana Crypt","Brainstorm","Cultivate","Dark Ritual","Sol Ring","Counterspell"]})}<div class="more">Show more <small>· showing 120 of 2,400</small></div>`]);
+S.push(['3 · Every match rendered: Show more gone (AC-10)',`${tiles(6,{names:["Zuran Orb","Zndrsplt, Eye of Wisdom","Zulaport Cutthroat","Zurgo Bellstriker","Zhalfirin Void","Zephyr Winder"]})}<p class="end">All 2,400 cards shown</p>${nav}`]);
+S.push(['4 · Search runs over the full list: "Ragavan" finds row 2,210 (AC-5, AC-12 resets to first batch)',`${head('<p class="sum"><b>3,105</b> cards · <b>$4,812</b></p>')}${ctl('Ragavan','All')}<div class="grid"><div class="tile">Ragavan, Nimble Pilferer<span class="fo">✨</span></div></div>`]);
+S.push(['5 · Foil chip before scrolling: 1 tile, no Show more (AC-11)',`${ctl('','Foil')}${tiles(1,{names:["Cultivate"],foil:true,nq:true})}`]);
+S.push(['6 · Small collection (<= B rows): unchanged, no Show more (AC-13)',`${head('<p class="sum"><b>42</b> cards · <b>$188</b></p>')}${ctl('','All')}${tiles(9)}${nav}`]);
+S.push(['7 · Loading: existing collection/loading.tsx skeleton, unchanged (longer wait only)',`<div style="display:flex;flex-direction:column;gap:16px"><div class="sk" style="height:28px;width:140px"></div><div class="sk" style="height:44px"></div><div class="sk" style="height:44px"></div><div class="grid">${'<div class="sk" style="aspect-ratio:5/7"></div>'.repeat(9)}</div></div>`]);
+S.push(['8 · Empty collection: existing import empty state, no Show more / error (AC-17)',`${head('')}<div class="empty"><div class="ico">📦</div><div><p class="p">No cards yet</p><p class="s">Import your collection from Manabox to get started.</p></div><div class="cta">Import collection</div></div>`]);
+S.push(['9 · /collection load error: never partial, never "No cards yet" (AC-4, AC-15, AC-16)',`${head('')}<div class="err" role="alert"><div class="ico">!</div><div><p class="p">Couldn't load your collection</p><p class="s" style="margin:4px auto 0">Something went wrong while loading your cards. Nothing has been changed.</p></div><div class="cta">Try again</div></div>${nav}`]);
+S.push(['10 · /trades/maya load error replaces match results (AC-16)',`<div class="hd"><div><h1>Trade with maya</h1><p class="sub">Matches from both collections.</p></div></div><div class="err" role="alert"><div class="ico">!</div><div><p class="p">Couldn't load maya's collection</p><p class="s" style="margin:4px auto 0">We can't show trade matches without the full collection.</p></div><div class="cta">Try again</div></div>`]);
+S.push(['11 · /u/maya: same grid + Show more; error variant has same message as 10 (AC-8, AC-16)',`<div class="row"><div class="av2">M</div><div><h1 style="font-size:18px">maya</h1><p class="sub" style="font-size:12px">Friends</p></div></div>${ctl('','All')}${tiles(6)}<div class="more">Show more <small>· showing 60 of 2,400</small></div><div class="err" role="alert" style="padding:16px"><p class="p">Couldn't load maya's collection</p><div class="cta">Try again</div><p class="note">(error variant shown below the normal one for comparison)</p></div>`]);
+S.push(['12 · /u/A viewed by non-friend, visibility = friends: no rows, no Show more (AC-18). Existing private state unchanged',`<div class="row"><div class="av2">A</div><div><h1 style="font-size:18px">A</h1></div></div><div class="empty" style="padding-top:24px"><div class="ico">🔒</div><div><p class="p">Only friends can see this collection</p><p class="s">Add A as a friend to browse their cards.</p></div></div>`]);
+document.write(S.map(([c,b])=>`<div class="cap">${c}</div><div class="scr">${b}</div>`).join(''));
+</script></body></html>
