@@ -1,5 +1,5 @@
 # Collection summary: total cards and estimated value
-Issue: #11 · PRD refs: US-13, §4.3, §4.4, §5.2, §5.3 · Status: Draft
+Issue: #11 · PRD refs: US-13, §4.3, §4.4, §5.2, §5.3 · Status: Approved
 
 ## Problem
 `/collection` shows a grid of tiles but never tells you how big the collection is or what it's roughly worth. To find out, a player would have to scroll and add things up in their head. PRD US-13 ("see the estimated market value of my collection via Scryfall price data", Nice to Have) has not been built yet. The prices are already in the database (`cards.price_usd`, `cards.price_usd_foil`, filled in by `src/lib/scryfall/cardRow.ts` at import time) and are already loaded on `/collection`, but the page never shows them.
@@ -182,3 +182,13 @@ The summary is a single card (`bg-elevated`, `border-border`, `rounded-[--radius
 | 7 | Loading: one optional 62px placeholder bar in `loading.tsx` | n/a |
 
 Design decisions: the value uses the amber accent so it is the most prominent element, matching the app's single accent color. The "Value unavailable" text is smaller and grey so it does not look like a number. The loading placeholder is included as optional.
+
+## Decisions (spec gate, 2026-10-13)
+Owner replied "approve" with no changes. The recommended defaults for Q1–Q7 are accepted:
+1. Unique = distinct printings (`scryfall_id`).
+2. Etched priced like foil (`price_usd_foil`, then `price_usd`).
+3. Nonfoil with only a foil price counts as unpriced.
+4. No summary on friend/public profiles.
+5. Null-`card` rows count toward total and "no price", not unique.
+6. Always 2 decimals, `en-US`, leading `~`.
+7. Proceed despite PRD US-13 being Nice to Have.
