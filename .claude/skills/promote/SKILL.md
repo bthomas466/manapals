@@ -21,7 +21,18 @@ Production is **staged**: Vercel's "Auto-assign Custom Production Domains" is of
 `gh pr merge <pr> --rebase --delete-branch`, then sync local `main` with `git pull --ff-only`.
 
 ## 4. Wait for the staged production build
-`vercel ls manapals`: wait for the newest Production deployment (built from the merge commit) to be Ready, and note its URL. Check that it's NOT live yet: `vercel inspect manapals.vercel.app` should still show the previous deployment.
+Find the deployment **by the merge commit's SHA**, not by position in `vercel ls`. Earlier merges leave staged production builds that were never promoted, so "the newest Ready Production row" can be the wrong one.
+
+```
+export MSHA=$(git rev-parse HEAD)   # after step 3's pull
+vercel api "/v6/deployments?projectId=manapals&target=production&limit=10" --scope bran4 --raw | python3 -c '
+import json, os, sys
+d = json.loads(sys.stdin.read(), strict=False)  # commit messages contain raw control characters, which jq rejects
+for x in d["deployments"]:
+    if x.get("meta", {}).get("githubCommitSha") == os.environ["MSHA"]:
+        print(x["url"], x.get("state") or x.get("readyState"))'
+```
+Repeat every ~10s until that deployment is `READY` (stop if `ERROR`: the build failed, nothing is live, so investigate with `vercel inspect <url> --logs`). Use **that** URL for every step below. Check it isn't live yet: `vercel inspect manapals.vercel.app` should still show the previous deployment. Before promoting, confirm the URL's commit equals `$MSHA`.
 
 ## 5. Prod migration (only if `supabase/migrations/**` changed)
 The `Migrate production` workflow starts on its own and waits for approval. Find the run with `gh run list --workflow migrate-prod.yml --limit 1`, and give the user the link: "Approve **db-production** at <url>." Never approve it yourself. Watch it after they approve, report the dry-run output and the result, and **don't promote until it succeeds**. If it fails, stop: the old deployment keeps serving, and nothing user-facing has changed.
