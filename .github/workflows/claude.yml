@@ -60,7 +60,11 @@ jobs:
           EOF
           sed -i 's/^ *//' .env.local
       - uses: anthropics/claude-code-action@v1
+        id: claude
         env:
+          # Factory dashboard telemetry (hooks + scripts/factory-event.sh).
+          FACTORY_DASHBOARD_URL: ${{ vars.FACTORY_DASHBOARD_URL }}
+          FACTORY_INGEST_TOKEN: ${{ secrets.FACTORY_INGEST_TOKEN }}
           # In Actions, subagents otherwise launch asynchronously; the
           # orchestrator ends its turn to "wait", which ends the job and
           # kills them (issue #11 smoke test). Run everything in the foreground.
@@ -73,3 +77,23 @@ jobs:
             --allowedTools "Agent,Skill,Bash,Read,Write,Edit,Glob,Grep,TodoWrite"
           additional_permissions: |
             actions: read
+
+      # Usage for the dashboard: models, turns, duration, estimated cost, read
+      # from the action's result. Runs even when Claude failed.
+      - name: Report usage to factory dashboard
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          FACTORY_DASHBOARD_URL: ${{ vars.FACTORY_DASHBOARD_URL }}
+          FACTORY_INGEST_TOKEN: ${{ secrets.FACTORY_INGEST_TOKEN }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+        run: |
+          detail=$(jq -sc --arg outcome "$CLAUDE_OUTCOME" --arg workflow "claude" '
+            flatten | [ .[] | select(.type == "result") ] | last // {} |
+            { workflow: $workflow, outcome: $outcome,
+              turns: .num_turns, durationMs: .duration_ms, costUsd: .total_cost_usd,
+              isError: .is_error, models: ((.modelUsage // {}) | keys) }' "$EXECUTION_FILE" 2>/dev/null || echo '{}')
+          scripts/factory-event.sh usage --issue "${{ github.event.issue.number || github.event.pull_request.number }}" --detail "$detail"
+          if [ "$CLAUDE_OUTCOME" = failure ]; then
+            scripts/factory-event.sh run_end --issue "${{ github.event.issue.number || github.event.pull_request.number }}" --detail '{"status":"failed"}'
+          fi

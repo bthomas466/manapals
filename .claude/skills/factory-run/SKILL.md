@@ -11,6 +11,15 @@ You are the orchestrator. Delegate each stage to its subagent (Agent tool, `suba
 
 Use `GH_HOST=github.com gh … --repo bthomas466/manapals` for every GitHub command.
 
+## Telemetry (factory dashboard)
+Report progress with `scripts/factory-event.sh`. It's a no-op if the dashboard isn't configured, and it never fails, so don't check its result. Use the run id `local-${CLAUDE_SESSION_ID}` locally; in Actions the script uses `cloud-$GITHUB_RUN_ID` automatically. Subagent start and finish are reported by a hook, so don't send those yourself.
+- After stage 0: `scripts/factory-event.sh run_start --run-id local-${CLAUDE_SESSION_ID} --issue <n>`
+- Around each stage: `… stage_start --run-id local-${CLAUDE_SESSION_ID} --stage "<k> <Name>"` and `… stage_end … --stage "<k> <Name>" --detail '{"result":"ok"}'`. The result is `ok`, `fixed` or `failed`. Fix rounds are `--detail '{"result":"fixed","round":2}'`.
+- When pausing at the spec gate: `… gate --run-id local-${CLAUDE_SESSION_ID} --stage "3 Spec gate"`
+- At the very end: `… run_end --run-id local-${CLAUDE_SESSION_ID} --detail '{"status":"<succeeded|failed|stopped>"}'`. Use `stopped` for `needs-human`. A gate pause ends with the `gate` event, not `run_end`.
+
+Send names, numbers and statuses only. Never send prompts, code, or file contents.
+
 ## 0. Set up
 1. Read the issue: `gh issue view <n> --json number,title,body,labels`. Stop if it's closed.
 2. Slug: 3–5 lowercase words from the title, joined with hyphens. Branch: `feature/<n>-<slug>`.
