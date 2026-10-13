@@ -9,7 +9,9 @@
 # secret), or a local `gh auth` login with -s project.
 set -euo pipefail
 
-OWNER=bthomas466
+# "@me" = the token's own account (bthomas466). Naming the user instead makes gh
+# look up the owner type, which a project-only token can't ("unknown owner type").
+OWNER=@me
 PROJECT_NUMBER=1
 export GH_HOST=github.com
 
