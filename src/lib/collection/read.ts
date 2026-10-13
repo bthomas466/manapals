@@ -10,26 +10,34 @@ export type PageResponse<T> = {
   error: { message: string } | null;
 };
 
-export async function readAllPages<T extends { id: number }>(
-  fetchPage: (afterId: number | null, pageSize: number) => PromiseLike<PageResponse<T>>,
+export async function readAllPagesByKey<T, K extends number | string>(
+  fetchPage: (afterKey: K | null, pageSize: number) => PromiseLike<PageResponse<T>>,
+  keyOf: (row: T) => K,
   pageSize: number = COLLECTION_PAGE_SIZE
 ): Promise<ReadResult<T>> {
   const rows: T[] = [];
-  let afterId: number | null = null;
+  let afterKey: K | null = null;
 
   for (;;) {
-    const { data, error } = await fetchPage(afterId, pageSize);
+    const { data, error } = await fetchPage(afterKey, pageSize);
     if (error || !data) return { ok: false, error: error?.message ?? "No data returned" };
 
     rows.push(...data);
     if (data.length < pageSize) return { ok: true, rows };
 
-    const lastId: number = data[data.length - 1].id;
-    if (afterId !== null && lastId <= afterId) {
+    const lastKey: K = keyOf(data[data.length - 1]);
+    if (afterKey !== null && lastKey <= afterKey) {
       return { ok: false, error: "Paging did not advance" };
     }
-    afterId = lastId;
+    afterKey = lastKey;
   }
+}
+
+export function readAllPages<T extends { id: number }>(
+  fetchPage: (afterId: number | null, pageSize: number) => PromiseLike<PageResponse<T>>,
+  pageSize: number = COLLECTION_PAGE_SIZE
+): Promise<ReadResult<T>> {
+  return readAllPagesByKey(fetchPage, (r) => r.id, pageSize);
 }
 
 export type CollectionPageState<T> = { kind: "error" } | { kind: "ready"; items: T[] };
