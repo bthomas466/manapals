@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { CollectionItem } from "../../src/components/collection/CollectionGrid";
 
 // Node-side Supabase client signed in as the E2E user (RLS applies, so it can
 // only write e2e_player's own rows). Used by mutating specs to set up fixtures
@@ -217,4 +218,34 @@ export async function restoreCollection(snapshot: CollectionSnapshot) {
       .eq("binder_name", row.binder_name);
     if (flagError) throw new Error(`restore (flags) failed: ${flagError.message}`);
   }
+}
+
+/** Row shape `summarizeCollection` takes (subset of the page's CollectionItem). */
+export type SummaryRow = Pick<CollectionItem, "quantity" | "finish" | "card">;
+
+/** e2e_player's rows as the /collection page sees them, for computing the expected summary. */
+export async function readOwnCollectionForSummary(): Promise<SummaryRow[]> {
+  const { client, userId } = await e2eSession();
+  const { data, error } = await client
+    .from("collection_items")
+    .select("quantity, finish, card:cards(scryfall_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)")
+    .eq("user_id", userId)
+    .returns<SummaryRow[]>();
+  if (error) throw new Error(`readOwnCollectionForSummary failed: ${error.message}`);
+  return data ?? [];
+}
+
+/** Stored Scryfall prices of a seeded card. */
+export async function cardPrices(ref: CardRef): Promise<{ price_usd: number | null; price_usd_foil: number | null }> {
+  const { client } = await e2eSession();
+  const { data, error } = await client
+    .from("cards")
+    .select("price_usd, price_usd_foil")
+    .eq("name", ref.name)
+    .eq("set_code", ref.set)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) throw new Error(`cardPrices failed for ${ref.name}: ${error?.message ?? "not found"}`);
+  const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  return { price_usd: n(data.price_usd), price_usd_foil: n(data.price_usd_foil) };
 }

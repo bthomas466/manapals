@@ -192,3 +192,89 @@ Owner replied "approve" with no changes. The recommended defaults for Q1–Q7 ar
 5. Null-`card` rows count toward total and "no price", not unique.
 6. Always 2 decimals, `en-US`, leading `~`.
 7. Proceed despite PRD US-13 being Nice to Have.
+
+## Technical design
+
+No migration. No new queries. No server actions or route handlers. The summary is derived on render from the `initialItems` that `/collection` already loads.
+
+### Changes
+| File | Change |
+|------|--------|
+| `src/lib/cards/price.ts` (new) | `unitPriceUsd(card, finish): number \| null`, the one shared rule: `foil`/`etched` use `price_usd_foil ?? price_usd`; `nonfoil` uses `price_usd` only. Coerces with `Number()` and treats non-finite values as `null`. |
+| `src/lib/trades/match.ts` | Line 47 calls `unitPriceUsd(item.card, item.finish)` instead of the inline expression. Behaviour is unchanged; the existing `tests/unit/trade-match.test.ts` guards it. |
+| `src/lib/collection/summary.ts` (new) | Pure `summarizeCollection(items)` and `formatCollectionSummary(summary)` (signatures below). |
+| `src/components/collection/CollectionSummary.tsx` (new) | Presentational only, with no hooks and no `"use client"`. It renders `<section aria-label="Collection summary">` with the two lines from `formatCollectionSummary`, using the Tailwind classes in the Design section. Returns `null` when `totalCards === 0`. |
+| `src/components/collection/CollectionView.tsx` | Adds `const summary = useMemo(() => summarizeCollection(initialItems), [initialItems])` and renders `{!isEmpty && <CollectionSummary summary={summary} />}` between the header row and `<CollectionGrid>`, so it sits above the search box. |
+| `src/app/(main)/collection/loading.tsx` | Adds one `h-[62px] rounded-[--radius-card] bg-elevated` placeholder bar between the header and the search bar (Design state 7). This is optional. |
+| `tests/unit/collection-summary.test.ts` (new) | AC-1 to AC-13, plus `unitPriceUsd` cases. |
+| `tests/unit/collection-summary-view.test.ts` (new) | Render test of `CollectionSummary` via `react-dom/server` `renderToStaticMarkup(createElement(...))`. It is a `.test.ts` file so the existing Vitest `include` glob and `node` environment work unchanged. Covers AC-13, AC-17 and AC-18. |
+| `tests/e2e/authed/collection-summary.spec.ts` (new) | Read-only checks against the seeded data: AC-14, AC-15, AC-16, AC-19. |
+| `tests/e2e/authed/collection-summary.serial.spec.ts` (new) | Checks that mutate the collection: AC-17, AC-20. Snapshots and restores the collection the same way `trade-flags.serial.spec.ts` does. |
+| `tests/e2e/supabase.ts` | Adds `readOwnCollectionForSummary()`, which returns the player's rows in the same shape as `CollectionItem` (`quantity, finish, card:cards(scryfall_id, price_usd, price_usd_foil)`), and `cardPrices(ref)`, which returns `{ price_usd, price_usd_foil }` for a seeded card. |
+
+Not touched: `page.tsx` (it already selects every field needed), `CollectionGrid.tsx`, `/u/[username]`, the trades pages, the schema, and `scripts/seed-staging.ts`.
+
+### Schema
+None. All inputs already exist: `collection_items.quantity`, `collection_items.finish`, `cards.scryfall_id`, `cards.price_usd numeric(10,2)` and `cards.price_usd_foil numeric(10,2)`. Nothing to backfill, and the PR does not need the `db-change` label.
+
+### Data flow
+1. `src/app/(main)/collection/page.tsx` (Server Component, unchanged) reads the user's `collection_items` with `.eq("user_id", user.id)` and passes `initialItems` to `CollectionView`.
+2. `CollectionView` (Client Component, already `"use client"`) computes `summarizeCollection(initialItems)` in a `useMemo`. It deliberately uses `initialItems`, not `items` (which has trade-status overrides applied) and not the filtered or sorted list inside `CollectionGrid`. Search, chips, sort and trade-flag taps therefore never change the summary (AC-16). The summary counts every row regardless of `trade_status`.
+3. On re-import, `ImportCollectionModal` calls `router.refresh()`. The server sends a new `initialItems` array, the `useMemo` dependency changes, and the summary recomputes. No separate cache is involved.
+4. `CollectionSummary` is rendered as part of the client tree (it is imported by a client component), but it has no state, so it renders the same on the server and the client. All formatting uses `Intl.NumberFormat("en-US", …)` with a fixed locale, so SSR and hydration produce identical text and there is no hydration mismatch.
+
+There are no Next 16 caching, routing or server-action concerns. The page stays dynamic because it reads auth cookies, and nothing new is fetched.
+
+### Logic placement
+`src/lib/collection/summary.ts`:
+```ts
+export type CollectionSummary = {
+  totalCards: number;          // sum of quantity over every row, including card === null
+  uniqueCards: number;         // distinct card.scryfall_id; rows with card === null are excluded
+  pricedCards: number;         // sum of quantity where unitPriceUsd(...) !== null
+  unpricedCards: number;       // totalCards - pricedCards (null-card rows count here)
+  estimatedValueCents: number | null; // integer cents; null when pricedCards === 0
+};
+export function summarizeCollection(
+  items: Pick<CollectionItem, "quantity" | "finish" | "card">[]
+): CollectionSummary;
+
+export type FormattedSummary = {
+  cards: string;   // "1,214 cards" | "1 card"
+  unique: string;  // "873 unique"
+  value: string;   // "~$2,431.18" | "Value unavailable"
+  valueAvailable: boolean;
+  note: string;    // "Estimated from Scryfall prices" [+ " · 12 cards have no price" | " · 1 card has no price"]
+};
+export function formatCollectionSummary(s: CollectionSummary): FormattedSummary;
+```
+- **Float safety (AC-11):** each row adds `Math.round(unitPrice * 100) * quantity` to an integer cent total. Prices are stored as `numeric(10,2)`, so rounding each price to cents is exact. Display divides by 100 only once, inside `Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })`.
+- **Robustness (AC-8, AC-12):** a missing `card`, a `null` price, or a non-finite `Number(price)` all count as unpriced and never throw.
+- `CollectionView` imports `CollectionItem` from `CollectionGrid`, the same way `match.ts` and `flags.ts` do, so no new type module is needed.
+- `CollectionSummary.tsx` only lays out the strings returned by `formatCollectionSummary`. In "Value unavailable", it uses the smaller grey style instead of amber, based on `valueAvailable`.
+
+### Test plan
+| AC | Test |
+|----|------|
+| AC-1 to AC-12 | `tests/unit/collection-summary.test.ts`: one `it` per AC on `summarizeCollection`, using fixture rows built like the `row()` helper in `trade-flags.test.ts`. AC-11 asserts `formatCollectionSummary(...).value === "~$0.60"` and `estimatedValueCents === 60`. AC-8 also asserts `Number.isFinite`. Extra cases for `unitPriceUsd`: foil, etched, nonfoil-with-only-foil, and both null. |
+| AC-13 | Same file: `formatCollectionSummary` with the exact strings `"1,214 cards"`, `"873 unique"` and `"~$2,431.18"`, plus singulars (`"1 card"`, `"1 card has no price"`) and plural `"12 cards have no price"`. |
+| AC-3 to AC-7 (no drift from Trade Match) | The existing `tests/unit/trade-match.test.ts` must still pass unchanged after `match.ts` switches to `unitPriceUsd`. |
+| AC-17 | Unit (`collection-summary-view.test.ts`): rendering `CollectionSummary` with an empty summary outputs `""`. E2E (`collection-summary.serial.spec.ts`): `setCollection([])`, open `/collection`, expect `getByRole("region", { name: "Collection summary" })` to have count 0, and "No cards yet" and the "Import Collection" button to be visible. |
+| AC-18 | Unit (`collection-summary-view.test.ts`): a fixture with one unpriced row produces markup containing `"1 card has no price"`, and one with three produces `"3 cards have no price"`. With every row priced, the markup does not contain `"no price"`. With no priced rows, it contains `"Value unavailable"`. |
+| AC-14, AC-15 | `collection-summary.spec.ts`: the region is visible and appears above the search box (compare `boundingBox().y` with the search input's). It contains "5 cards", "4 unique" and "Estimated from Scryfall prices". The expected value is computed by calling `summarizeCollection` + `formatCollectionSummary` (imported from `src/lib`) on `readOwnCollectionForSummary()`, then asserted with `toContainText`. This also accepts "Value unavailable" if staging prices are null. |
+| AC-16 | Same spec: record the region's text, fill the search with "Sol Ring", tap the `Foil` chip, then assert the region's text is identical and still contains "5 cards" and "4 unique". |
+| AC-19 | Same spec: "5 cards" is shown on `/collection` (e2e_friend's seeded collection is larger). Then `/u/e2e_friend` has a "Collection summary" region count of 0. |
+| AC-20 | `collection-summary.serial.spec.ts`: read the seeded Sol Ring's `price_usd` via `cardPrices`, then `setCollection` with Sol Ring nonfoil at quantity `ceil(10000 / price) + 1` (or 99,999 if the price is null, which tests long counts). Plus Lightning Bolt foil ×1. At the Pixel 7 viewport resized to `375×800`, assert the value matches `/~\$\d{2,3},\d{3}\.\d{2}/` (when priced) and `document.documentElement.scrollWidth <= 375`. Restore the snapshot in `afterAll`. |
+
+**Seed data:** no changes to `scripts/seed-staging.ts`. The seeded e2e_player collection (Sol Ring ×2, Arcane Signet, Lightning Bolt foil, Counterspell = 5 cards, 4 unique) already satisfies AC-14 and AC-19. A new read-only spec in the `authed` project runs in parallel with `seeded-data.spec.ts`. The serial spec runs in `authed-serial` after it, so the mutations cannot race the read-only checks.
+
+**Screenshots:** no new `toHaveScreenshot` baselines are required. If the builder adds one for `/collection`, it must come from the CI `linux-screenshots` artifact.
+
+### Risks
+1. **The PostgREST 1,000-row cap can make the totals too low (pre-existing, now visible).** `supabase/config.toml` sets `max_rows = 1000`, and the hosted projects use the same default. `page.tsx` fetches `collection_items` without `.range()` pagination, so a user with more than 1,000 rows already sees a truncated grid. The summary would then show a confident but too-low "N cards / ~$X". The ACs don't require a fix, and the spec says "no new queries", so this design does **not** change the query. Recommendation for the human: either accept this for now and file a follow-up to page through `collection_items` in `page.tsx` (a loop of `.range(i, i + 999)`; same query, same RLS), or add that loop to this PR. Rows are stored per printing × finish × binder × condition, so Theo's 873 unique cards are probably under the cap, but large collectors would hit it.
+2. **Privacy.** The summary is rendered only inside `CollectionView`, which only `/collection` uses. `/collection` is filtered to `user_id = user.id` on top of RLS. `/u/[username]` uses `CollectionGrid` directly and is not touched. AC-19 guards both. There are no RLS changes and no new data is exposed. A friend could already compute the same numbers from rows they can read today.
+3. **Refactoring the Trade Match price rule.** Pulling the rule out of `match.ts:47` into `unitPriceUsd` must keep the behaviour identical (`finish !== "nonfoil"` means the foil rule applies). The unchanged `trade-match.test.ts` suite is the regression guard. Keep the helper's input type minimal (`{ price_usd, price_usd_foil }`) so both callers type-check.
+4. **Numeric typing.** `numeric` columns arrive as JSON numbers from PostgREST today, but the helper coerces with `Number()` and rejects non-finite values in case a string ever arrives, which avoids `"1.50" * 2` style bugs and NaN totals.
+5. **Hydration mismatch.** Any locale-dependent formatting such as `toLocaleString()` with no locale would differ between the Vercel server and the user's browser. Always pass `"en-US"` explicitly.
+6. **Performance.** One O(n) pass with a `Set`, memoized on `initialItems`. This is negligible even at the 1,000-row cap and does not recompute on search or filter keystrokes.
+7. **Migration safety.** Not applicable, because there is no schema change.
