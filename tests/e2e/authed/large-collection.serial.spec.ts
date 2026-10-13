@@ -88,9 +88,10 @@ test.describe("large collection", () => {
     await expect(page.getByRole("button", { name: "Cultivate, Bulk 1250" })).toBeVisible();
   });
 
-  // #11 (collection summary) has not merged on this branch. Enable and assert the
-  // summary total reads "1,250" once it does.
-  test.skip("AC-6: summary total reads 1,250 (needs #11)", async () => {});
+  test("AC-6: summary total counts every row", async ({ page }) => {
+    await page.goto("/collection");
+    await expect(page.getByRole("region", { name: "Collection summary" })).toContainText("1,250 cards");
+  });
 
   test("AC-7: trade match does not list Swords as 'They have, you want' when the player owns it in row 1,249", async ({ page }) => {
     await page.goto("/trades/e2e_friend");
