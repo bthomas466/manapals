@@ -16,6 +16,14 @@ test("collection shows only your own cards", async ({ page }) => {
   for (const name of ["Llanowar Elves", "Cultivate", "Swords to Plowshares"]) {
     await expect(page.getByRole("img", { name })).toHaveCount(0);
   }
+  // AC-13: a small collection never shows the progressive-loading button.
+  await expect(page.getByRole("button", { name: "Show more", exact: true })).toHaveCount(0);
+});
+
+test("AC-18: a non-friend with a friends-only collection sees the lock state and no Show more", async ({ page }) => {
+  await page.goto("/u/e2e_stranger");
+  await expect(page.getByText("Only friends can see this collection")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show more", exact: true })).toHaveCount(0);
 });
 
 test("trade match fills every section from the seeded wishlists", async ({ page }) => {

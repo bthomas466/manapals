@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import CollectionGrid, { type CollectionItem } from "@/components/collection/CollectionGrid";
 import FriendActionButton from "@/components/friends/FriendActionButton";
 import WishlistGrid from "@/components/wishlist/WishlistGrid";
+import CollectionLoadError from "@/components/collection/CollectionLoadError";
+import { getCollectionItems } from "@/lib/collection/queries";
 import { getWishlistItems } from "@/lib/wishlist/queries";
 
 export default async function PublicProfilePage({
@@ -47,18 +49,13 @@ export default async function PublicProfilePage({
 
   const canViewCollection = profile.collection_visibility === "public" || status === "friends";
 
-  let items: CollectionItem[] = [];
-  if (canViewCollection) {
-    const { data } = await supabase
-      .from("collection_items")
-      .select(
+  const collection = canViewCollection
+    ? await getCollectionItems<CollectionItem>(
+        supabase,
+        profile.user_id,
         "id, quantity, finish, condition, binder_name, card:cards(scryfall_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)"
       )
-      .eq("user_id", profile.user_id)
-      .order("id")
-      .returns<CollectionItem[]>();
-    items = data ?? [];
-  }
+    : null;
 
   // Wishlist is friends-only regardless of collection_visibility (PRD §4.7).
   const wishlistItems = status === "friends" ? await getWishlistItems(supabase, profile.user_id) : [];
@@ -85,9 +82,11 @@ export default async function PublicProfilePage({
         />
       </div>
 
-      {canViewCollection ? (
+      {collection && !collection.ok ? (
+        <CollectionLoadError title={`Couldn't load ${profile.display_name}'s collection`} />
+      ) : collection ? (
         <CollectionGrid
-          items={items}
+          items={collection.rows}
           emptyState={
             <p className="text-sm text-text-secondary text-center pt-8">
               {profile.display_name} hasn&apos;t imported any cards yet.
