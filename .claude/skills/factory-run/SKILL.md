@@ -83,7 +83,7 @@ You're in cloud mode when the `GITHUB_ACTIONS` environment variable is `true` (`
 - **Stage 9:** the branch is already pushed. The release-manager commits the rest, pushes, and opens the PR. In the cloud, PRs and labels are created with the Claude GitHub App's token, so CI, Migrate staging, and E2E run on them.
 - **Stage 10 (QA):** the qa agent watches checks with `gh pr checks <pr> --watch`. Skip the `vercel` CLI spot-check, since it isn't installed or logged in on the runner; use the preview URL from the PR's Vercel check instead.
 - **Stage 11 (report):** post the report as a comment on the issue, ending with "Review the preview, then run `/promote <pr#>` locally." Skip worktree cleanup.
-- **If you stop early** (fix rounds exhausted, a reviewer blocker, an unresolved privacy risk): comment on the issue explaining why and add the `needs-human` label.
+- **Never end silently.** Your last action is always an issue comment that lists the stages completed, where you stopped, and why. If you stopped early for a blocking reason (fix rounds exhausted, a reviewer blocker, an unresolved privacy risk), also add the `needs-human` label.
 
 ## Hard rules
 - Never merge, never trigger or approve `Migrate production`, never push to `main`.
