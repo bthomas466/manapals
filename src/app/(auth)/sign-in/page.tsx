@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 async function signInWithProvider(provider: "google") {
@@ -18,9 +19,14 @@ export default function SignInPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo / wordmark */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 rounded-[--radius-card] bg-elevated border border-border flex items-center justify-center">
-            <span className="text-3xl">🃏</span>
-          </div>
+          <Image
+            src="/brand/concept-3.svg"
+            alt="ManaPals logo"
+            width={64}
+            height={64}
+            priority
+            className="mx-auto"
+          />
           <h1 className="text-2xl font-extrabold text-text-primary">
             ManaPals
           </h1>
