@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { onboardingRedirect } from "@/lib/onboarding/gate";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -43,6 +44,29 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/collection";
     return NextResponse.redirect(url);
+  }
+
+  if (user && !isApiRoute && (request.method === "GET" || request.method === "HEAD")) {
+    // A failed or empty read yields null profile, which the gate treats as pass-through.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarded_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const target = onboardingRedirect({
+      pathname,
+      method: request.method,
+      profile: profile ? { onboarded_at: profile.onboarded_at as string | null } : null,
+    });
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      const redirect = NextResponse.redirect(url);
+      // Keep any refreshed session cookies.
+      supabaseResponse.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
   }
 
   return supabaseResponse;

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { profileSaveError, validateProfileInput } from "@/lib/profile/validate";
 
 type ActionResult = { error?: string };
 
@@ -65,23 +66,18 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const displayName = (formData.get("display_name") as string | null)?.trim();
-  const usernameRaw = (formData.get("username") as string | null)?.trim().toLowerCase();
-
-  if (!displayName) return { error: "Display name is required." };
-  if (!usernameRaw || !/^[a-z0-9_]{3,20}$/.test(usernameRaw)) {
-    return { error: "Username must be 3-20 characters: lowercase letters, numbers, underscores." };
-  }
+  const result = validateProfileInput({
+    displayName: formData.get("display_name") as string | null,
+    username: formData.get("username") as string | null,
+  });
+  if (!result.ok) return { error: result.error };
 
   const { error } = await supabase
     .from("profiles")
-    .update({ display_name: displayName, username: usernameRaw })
+    .update({ display_name: result.value.displayName, username: result.value.username })
     .eq("user_id", user.id);
 
-  if (error) {
-    if (error.code === "23505") return { error: "That username is taken." };
-    return { error: "Couldn't update profile." };
-  }
+  if (error) return { error: profileSaveError(error.code) };
   return {};
 }
 

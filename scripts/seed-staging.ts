@@ -149,6 +149,7 @@ async function main() {
           username: user.username,
           display_name: user.displayName,
           collection_visibility: "friends",
+          onboarded_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
       );
