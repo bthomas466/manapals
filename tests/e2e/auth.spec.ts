@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("signed out", () => {
   test("protected routes redirect to sign-in", async ({ page }) => {
-    for (const path of ["/", "/collection", "/wishlist", "/trades"]) {
+    for (const path of ["/", "/collection", "/wishlist", "/trades", "/u/e2e_friend"]) {
       await page.goto(path);
       await expect(page, `${path} should redirect`).toHaveURL(/\/sign-in$/);
     }
