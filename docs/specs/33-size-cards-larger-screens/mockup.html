@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><title>#33 card grid sizing</title>
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260)}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:#0a0a0d;color:var(--tp);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;width:1520px}
+h1{font-size:18px;margin:0 0 4px}.note{color:#9aa;font-size:13px;margin:0 0 20px}
+.cap{font-size:13px;font-weight:700;color:var(--amber);margin:24px 0 8px}.cap span{color:#9aa;font-weight:500}
+.frame{background:var(--page);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+.pg{padding:16px 16px 20px}
+.h{font-size:20px;font-weight:800;margin:0 0 12px}
+.search{height:44px;border-radius:12px;border:1px solid var(--border);background:var(--elevated);color:var(--tm);font-size:14px;padding:12px 14px;margin-bottom:10px}
+.bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.chip{min-height:44px;display:flex;align-items:center;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--elevated);color:var(--ts);font-size:12px;font-weight:600}
+.chip.on{background:var(--amber);color:var(--page);border-color:var(--amber)}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(var(--c),minmax(0,1fr))}
+.t{position:relative;aspect-ratio:5/7;border-radius:8px;border:1px solid var(--border);overflow:hidden;display:flex;align-items:flex-end;padding:6px;font-size:11px;font-weight:700;line-height:1.1;color:#fff;text-shadow:0 1px 2px #000}
+.q{position:absolute;top:4px;right:4px;border-radius:9999px;background:oklch(13% .01 260/.8);padding:2px 6px;font-size:10px;font-weight:700}
+.f{position:absolute;top:4px;left:4px;border-radius:9999px;background:var(--amber);color:var(--page);padding:2px 6px;font-size:10px;font-weight:700}
+.sm{text-align:center;font-size:12px;color:var(--tm);margin:12px 0 8px}
+.more{min-height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:12px;background:var(--elevated);color:var(--ts);font-size:14px;font-weight:600}
+.nav{height:56px;border-top:1px solid var(--border);background:var(--surface);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--ts)}
+.spec{font-size:12px;color:#9aa;margin-top:6px}
+.sk{aspect-ratio:5/7;border-radius:8px;background:var(--elevated);border:1px solid var(--border)}
+.gap{outline:1px dashed var(--amber);outline-offset:-1px}
+</style></head><body>
+<h1>#33 Size cards properly on larger screens</h1>
+<p class="note">Frames are drawn at true viewport width. Only the card grid changes; header, search, chips, sort and bottom nav keep full-width behaviour. Tile cap 200px, tiles stay 5:7.</p>
+
+<div class="cap">A. Mobile 375px, unchanged <span>3 columns, gap 10px, tile ~108px (AC-1, AC-2, AC-3)</span></div>
+<div class="frame" style="width:375px"><div class="pg"><p class="h">Collection</p><div class="search">Search cards</div><div class="bar"><div class="chip on">All</div><div class="chip">Foil</div><div class="chip">Tradeable</div><div class="chip" style="margin-left:auto">Name</div></div><div class="grid" style="--c:3" data-n="9"></div><p class="sm">Showing 60 of 900</p><div class="more">Show more</div></div><div class="nav"><span>Collection</span><span>Wishlist</span><span>Trades</span><span>Profile</span></div></div>
+
+<div class="cap">B. Tablet 768px <span>5 columns (md), tile ~139px, ~15 cards on screen instead of ~6 (AC-4, AC-6, AC-7)</span></div>
+<div class="frame" style="width:768px"><div class="pg"><p class="h">Collection</p><div class="search">Search cards</div><div class="bar"><div class="chip on">All</div><div class="chip">Foil</div><div class="chip">Tradeable</div><div class="chip" style="margin-left:auto">Name</div></div><div class="grid" style="--c:5" data-n="15"></div><p class="sm">Showing 60 of 900</p><div class="more">Show more</div></div><div class="nav"><span>Collection</span><span>Wishlist</span><span>Trades</span><span>Profile</span></div></div>
+
+<div class="cap">C. Desktop 1440px, trades match sections <span>8 columns (xl), tile ~170px, same grid in all three sections (AC-7, AC-11)</span></div>
+<div class="frame" style="width:1440px"><div class="pg"><p class="h">Trade with maya</p>
+<p style="font-size:13px;font-weight:700;color:var(--ts);margin:0 0 8px">They have, you want</p><div class="grid" style="--c:8" data-n="8" data-price="1"></div>
+<p style="font-size:13px;font-weight:700;color:var(--ts);margin:16px 0 8px">You have, they want</p><div class="grid" style="--c:8" data-n="5" data-price="1"></div>
+<p style="font-size:13px;font-weight:700;color:var(--ts);margin:16px 0 8px">Both want</p><p style="font-size:13px;color:var(--tm);margin:0">No matches yet. (existing empty text, no grid; AC-12)</p></div><div class="nav"><span>Collection</span><span>Wishlist</span><span>Trades</span><span>Profile</span></div></div>
+
+<div class="cap">D. Desktop 1440px, collection <span>8 columns, 2xl (&ge;1536) goes to 10 columns</span></div>
+<div class="frame" style="width:1440px"><div class="pg"><div class="grid" style="--c:8" data-n="16"></div></div></div>
+
+<div class="cap">E. Loading skeleton <span>Same column rules at every width (AC-8). Shown at 375 (3 cols) and 1280 (8 cols)</span></div>
+<div style="display:flex;gap:24px;align-items:flex-start"><div class="frame" style="width:375px"><div class="pg"><div class="grid" style="--c:3" data-sk="6"></div></div></div>
+<div class="frame" style="width:1280px"><div class="pg"><div class="grid" style="--c:8" data-sk="8"></div></div></div></div>
+
+<div class="cap">Column ladder <span>&lt;640: 3 | sm 640: 4 | md 768: 5 | lg 1024: 6 | xl 1280: 8 | 2xl 1536: 10</span></div>
+<script>
+const N=[["Lightning Bolt","#8a2a1c",2,"f"],["Sol Ring","#5a5a66"],["Counterspell","#1f4f8a"],["Llanowar Elves","#2b6a34"],["Swords to Plowshares","#8a8466"],["Dark Ritual","#3a2548",3],["Birds of Paradise","#2b6a34"],["Cultivate","#2b6a34"],["Path to Exile","#8a8466"],["Brainstorm","#1f4f8a"],["Rhystic Study","#1f4f8a",1,"f"],["Command Tower","#6a5a2a"],["Arcane Signet","#5a5a66"],["Demonic Tutor","#3a2548"],["Cyclonic Rift","#1f4f8a"],["Smothering Tithe","#8a8466"]];
+const P=["$1.20","$2.10","$0.45","$14.00","$0.80","$3.25","$0.30","$1.05"];
+document.querySelectorAll('.grid').forEach(g=>{
+ const sk=g.dataset.sk;
+ if(sk){for(let i=0;i<sk;i++)g.insertAdjacentHTML('beforeend','<div class="sk"></div>');return}
+ for(let i=0;i<+g.dataset.n;i++){const c=N[i%N.length];
+  g.insertAdjacentHTML('beforeend',`<div class="t" style="background:linear-gradient(160deg,${c[1]},#15151a)">${c[0]}${c[2]>1?`<span class="q">×${c[2]}</span>`:''}${c[3]?'<span class="f">✨</span>':''}${g.dataset.price?`<span class="q" style="top:auto;bottom:4px;right:4px">${P[i%8]}</span>`:''}</div>`)}
+});
+</script></body></html>
