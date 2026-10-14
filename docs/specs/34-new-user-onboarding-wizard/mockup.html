@@ -1,0 +1,188 @@
+<!doctype html><html><head><meta charset="utf-8"><title>#34 Onboarding wizard mockup</title>
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--success:oklch(70% .15 145);--tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260);--err:#ef4444}
+*{box-sizing:border-box;margin:0}
+body{background:#0b0b0e;color:var(--tp);font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;-webkit-font-smoothing:antialiased}
+.board{display:grid;grid-template-columns:repeat(3,375px);gap:28px 24px;width:max-content}
+.cap{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9aa;margin-bottom:8px}
+.cap b{color:var(--amber)}
+.frame{width:375px;min-height:700px;background:var(--page);border:1px solid var(--border);border-radius:20px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
+.brand{font-weight:800;font-size:17px;letter-spacing:-.01em}.brand i{color:var(--amber);font-style:normal}
+.step{font-size:12px;font-weight:700;color:var(--ts)}
+.prog{display:flex;gap:6px;padding:0 20px}
+.prog span{flex:1;height:6px;border-radius:3px;background:var(--elevated)}
+.prog span.on{background:var(--amber)}
+main{padding:20px;flex:1;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.sub{font-size:14px;color:var(--ts);line-height:1.45;margin-top:4px}
+.avatar-row{display:flex;align-items:center;gap:14px}
+.av{width:64px;height:64px;border-radius:9999px;background:linear-gradient(135deg,#6b5bd6,#d98a4a);display:grid;place-items:center;font-weight:800;font-size:24px;color:#fff}
+.av.ph{background:var(--elevated);color:var(--tm);border:1px solid var(--border)}
+.link{min-height:44px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;color:var(--amber);background:none;border:0;padding:0 4px;font-family:inherit}
+label{display:block;font-size:12px;font-weight:700;color:var(--ts);margin-bottom:6px}
+.inp{display:flex;align-items:center;gap:4px;min-height:48px;border:1px solid var(--border);background:var(--elevated);border-radius:8px;padding:0 14px;font-size:15px}
+.inp.bad{border-color:var(--err)}
+.inp .at{color:var(--tm)}
+.preview{font-size:13px;color:var(--ts);margin-top:8px}.preview code{color:var(--tp);font-family:ui-monospace,Menlo,monospace;font-size:13px;background:var(--elevated);padding:2px 6px;border-radius:6px}
+.err{font-size:12px;color:var(--err);margin-top:6px;font-weight:600}
+.note{display:flex;gap:10px;font-size:13px;color:var(--ts);line-height:1.4;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px}
+.btn{min-height:48px;width:100%;border-radius:12px;font-size:14px;font-weight:700;border:0;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.btn.pri{background:var(--amber);color:var(--page)}
+.btn.pri.dis{opacity:.5}
+.btn.sec{background:var(--elevated);border:1px solid var(--border);color:var(--ts);font-weight:600}
+.btn.txt{background:none;color:var(--tm);font-weight:600}
+.row{display:flex;gap:10px}.row .btn{flex:1}
+.foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+ol{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+ol li{counter-increment:s;display:flex;gap:12px;font-size:14px;line-height:1.4;color:var(--ts)}
+ol li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:9999px;background:var(--elevated);border:1px solid var(--border);color:var(--amber);font-size:12px;font-weight:800;display:grid;place-items:center;margin-top:-1px}
+ol b{color:var(--tp)}
+.tip{font-size:12px;color:var(--tm);line-height:1.4}
+.panel{border:1px solid var(--border);background:var(--elevated);border-radius:8px;padding:12px}
+.panel p{font-size:14px;color:var(--ts);line-height:1.45}.panel b{color:var(--tp)}
+.um{margin-top:8px;max-height:130px;overflow:hidden}.um p{font-size:12px;color:var(--ts);padding:2px 0}.um .h{font-weight:700;color:var(--tm)}
+.spin{width:28px;height:28px;border-radius:9999px;border:3px solid var(--elevated);border-top-color:var(--amber);margin:0 auto 12px}
+.center{text-align:center;padding:28px 0}
+.ok{width:44px;height:44px;border-radius:9999px;background:color-mix(in oklch,var(--success) 20%,transparent);color:var(--success);display:grid;place-items:center;font-size:22px;font-weight:800;margin:0 auto 10px}
+.disc{border:1px solid var(--border);border-radius:8px;background:var(--elevated)}
+.disc summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:14px;font-weight:700;list-style:none}
+.disc .body{padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px 20px 28px;display:flex;flex-direction:column;gap:14px}
+.sheet h2{font-size:18px;font-weight:700}
+.dim{opacity:.35}
+.sheethead{display:flex;justify-content:space-between;align-items:center}
+.sheethead span{font-size:14px;font-weight:600;color:var(--tm)}
+</style></head><body>
+<div class="board">
+
+<!-- 1 -->
+<div><div class="cap"><b>S1</b> Step 1 default (Google photo) — AC-7, 13, 15, 28, 29</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 1 of 2</span></header>
+<div class="prog" role="progressbar"><span class="on"></span><span></span></div>
+<main>
+<div><h1>Welcome to ManaPals</h1><p class="sub">Confirm how friends will see you. You can change this later in Profile.</p></div>
+<div class="avatar-row"><div class="av">S</div><div><div style="font-size:13px;color:var(--ts)">Google photo</div><button class="link" style="padding-left:0">Remove photo</button></div></div>
+<div><label>Display name</label><div class="inp">Sam Rivera</div></div>
+<div><label>Username</label><div class="inp"><span class="at">@</span>samrivera88</div><p class="preview">Your profile link: <code>/u/samrivera88</code></p></div>
+<div class="note"><span>🔒</span><span>Only friends can see your collection. You can change this in Profile.</span></div>
+<div class="foot"><button class="btn pri">Continue</button></div>
+</main></div></div>
+
+<!-- 2 -->
+<div><div class="cap"><b>S2</b> Step 1 field error, values kept — AC-9, 10, 11</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 1 of 2</span></header>
+<div class="prog"><span class="on"></span><span></span></div>
+<main>
+<div><h1>Welcome to ManaPals</h1><p class="sub">Confirm how friends will see you. You can change this later in Profile.</p></div>
+<div class="avatar-row"><div class="av">S</div><div><div style="font-size:13px;color:var(--ts)">Google photo</div><button class="link" style="padding-left:0">Remove photo</button></div></div>
+<div><label>Display name</label><div class="inp">Sam Rivera</div></div>
+<div><label>Username</label><div class="inp bad"><span class="at">@</span>samr</div><p class="err" role="alert">That username is taken.</p><p class="preview">Your profile link: <code>/u/samr</code></p></div>
+<div class="note"><span>🔒</span><span>Only friends can see your collection. You can change this in Profile.</span></div>
+<div class="foot"><button class="btn pri">Continue</button></div>
+</main></div></div>
+
+<!-- 3 -->
+<div><div class="cap"><b>S3</b> Step 1 saving + no photo (placeholder) + save error — AC-13, 14</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 1 of 2</span></header>
+<div class="prog"><span class="on"></span><span></span></div>
+<main>
+<div><h1>Welcome to ManaPals</h1><p class="sub">Confirm how friends will see you. You can change this later in Profile.</p></div>
+<div class="avatar-row"><div class="av ph">S</div><div style="font-size:13px;color:var(--ts)">No profile photo</div></div>
+<div><label>Display name</label><div class="inp">Sam Rivera</div></div>
+<div><label>Username</label><div class="inp"><span class="at">@</span>sam_rivera</div><p class="preview">Your profile link: <code>/u/sam_rivera</code></p></div>
+<p class="err" role="alert" style="font-size:13px;margin:0">Couldn't update profile.</p>
+<div class="note"><span>🔒</span><span>Only friends can see your collection. You can change this in Profile.</span></div>
+<div class="foot"><button class="btn pri dis">Saving…</button><p class="tip" style="text-align:center">(Shown together for review: in the app the error appears after the save fails and the button returns to “Continue”.)</p></div>
+</main></div></div>
+
+<!-- 4 -->
+<div><div class="cap"><b>S4</b> Step 2 pick — AC-17, 24, 25</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 2 of 2</span></header>
+<div class="prog"><span class="on"></span><span class="on"></span></div>
+<main>
+<div><h1>Import your collection</h1><p class="sub">Bring your cards over from Manabox so friends can browse them.</p></div>
+<ol>
+<li><span>Open Manabox and go to your <b>Collection</b>.</span></li>
+<li><span>Tap the <b>⋯</b> menu and choose <b>Export</b>.</span></li>
+<li><span>Choose <b>CSV</b> as the format.</span></li>
+<li><span>Save the file to your phone (Files on iPhone, Downloads on Android) or share it to yourself.</span></li>
+<li><span>Come back here and tap <b>Choose CSV file</b>.</span></li>
+</ol>
+<p class="tip">Only want to share one binder? Open that binder in Manabox and export from there.</p>
+<div class="foot"><button class="btn pri">Choose CSV file</button>
+<div class="row"><button class="btn sec">Back</button><button class="btn txt">Skip for now</button></div></div>
+</main></div></div>
+
+<!-- 5 -->
+<div><div class="cap"><b>S5</b> Step 2 parse / server error — AC-20, 21</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 2 of 2</span></header>
+<div class="prog"><span class="on"></span><span class="on"></span></div>
+<main>
+<div><h1>Import your collection</h1></div>
+<div class="panel" role="alert"><p>No usable rows found in this file.</p></div>
+<div class="disc"><summary style="display:flex">How to export from Manabox <span style="color:var(--tm)">▾</span></summary></div>
+<div class="foot"><button class="btn sec">Try another file</button>
+<div class="row"><button class="btn sec">Back</button><button class="btn txt">Skip for now</button></div></div>
+</main></div></div>
+
+<!-- 6 -->
+<div><div class="cap"><b>S6</b> Step 2 confirm, empty collection (no “replace” wording) — AC-18. Variant with rows: AC-23</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 2 of 2</span></header>
+<div class="prog"><span class="on"></span><span class="on"></span></div>
+<main>
+<div><h1>Import your collection</h1></div>
+<div class="panel"><p>Found <b>1,204</b> cards in this file.</p></div>
+<div class="foot"><button class="btn pri">Import cards</button><button class="btn sec">Choose a different file</button>
+<p class="tip" style="margin-top:6px;border-top:1px dashed var(--border);padding-top:10px">Variant when rows already exist: “Found 1,204 cards in this file. Importing will <b style="color:var(--tp)">replace your current collection</b> — this can't be undone.” Button reads “Replace collection”.</p></div>
+</main></div></div>
+
+<!-- 7 -->
+<div><div class="cap"><b>S7</b> Step 2 importing — Back / Skip hidden</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 2 of 2</span></header>
+<div class="prog"><span class="on"></span><span class="on"></span></div>
+<main>
+<div><h1>Import your collection</h1></div>
+<div class="center"><div class="spin"></div><p class="sub" style="margin:0">Importing and fetching card data from Scryfall…</p></div>
+</main></div></div>
+
+<!-- 8 -->
+<div><div class="cap"><b>S8</b> Step 2 done + unmatched — AC-18, 19, 22</div>
+<div class="frame">
+<header><span class="brand">Mana<i>Pals</i></span><span class="step">Step 2 of 2</span></header>
+<div class="prog"><span class="on"></span><span class="on"></span></div>
+<main>
+<div style="text-align:center;padding-top:8px"><div class="ok">✓</div><h1>You're all set</h1><p class="sub">Imported <b style="color:var(--tp)">1,198</b> cards.</p></div>
+<div class="panel um"><p class="h">6 cards couldn't be matched:</p>
+<p>Sol Ring (PLST)</p><p>Lightning Bolt (2XM)</p><p>Counterspell (MH2)</p><p>Rhystic Study (WOT)</p><p>Cultivate (C21)</p><p>Swords to Plowshares (STA)</p></div>
+<div class="foot"><button class="btn pri">Go to my collection</button></div>
+</main></div></div>
+
+<!-- 9 -->
+<div><div class="cap"><b>S9</b> Existing modal: new “How to export from Manabox” disclosure (expanded) — AC-26</div>
+<div class="frame">
+<div class="dim" style="padding:20px"><h1>Collection</h1><p class="sub">No cards yet</p></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="sheethead"><h2>Import Collection</h2><span>Cancel</span></div>
+<p class="sub" style="margin:0">Export your collection from Manabox as a CSV, then upload it here.</p>
+<div class="disc"><summary>How to export from Manabox <span style="color:var(--amber)">▴</span></summary>
+<div class="body"><ol>
+<li><span>Open Manabox and go to your <b>Collection</b>.</span></li>
+<li><span>Tap the <b>⋯</b> menu and choose <b>Export</b>.</span></li>
+<li><span>Choose <b>CSV</b> as the format.</span></li>
+<li><span>Save the file to your phone or share it to yourself.</span></li>
+<li><span>Come back here and tap <b>Choose CSV file</b>.</span></li>
+</ol><p class="tip">Only want to share one binder? Export from that binder in Manabox.</p></div></div>
+<button class="btn pri">Choose CSV file</button>
+</div></div></div>
+
+</div></body></html>
