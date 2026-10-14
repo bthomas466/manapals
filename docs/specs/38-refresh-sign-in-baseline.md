@@ -1,5 +1,5 @@
 # Refresh the sign-in screenshot baseline for the new logo
-Issue: #38 · PRD refs: US-01 (sign-in), §5.2 (mobile experience) · Status: Draft
+Issue: #38 · PRD refs: US-01 (sign-in), §5.2 (mobile experience) · Status: Approved
 
 ## Problem
 The `sign-in page visual` test in `tests/e2e/auth.spec.ts` no longer checks the real sign-in page.
@@ -116,3 +116,56 @@ No UI change. The mockup is a reference of what the refreshed baseline should sh
 | Broken logo | No mockup. Covered by the AC-4 wait and the AC-5 one-off negative check | AC-4, AC-5 |
 
 The caption bar at the top of the mockup is not part of the page, so the PNG is a few pixels taller than 412x839. The real baseline has no caption. No new decisions for Open questions.
+
+## Decisions (spec gate, 2026-10-14)
+Owner replied `approve` with no changes. Recommended defaults accepted for Q1–Q5: dispatch e2e.yml with update_snapshots to regenerate the linux baseline; delete the darwin baseline; `maxDiffPixelRatio: 0.002`; limit stays per-assertion; #32's spec unchanged.
+
+## Technical design
+
+### Changes
+- `tests/e2e/auth.spec.ts` (modify): in "sign-in page visual" only, after the Google button check, add `const logo = page.getByRole("img", { name: "ManaPals logo" })`, `await expect(logo).toBeVisible()`, `await expect(logo).toHaveAttribute("src", /concept-3\.svg/)` (the `src` may be a `/_next/image?url=%2Fbrand%2Fconcept-3.svg…` URL, so don't match the `/brand/` slashes), and `await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)` (same pattern as `brand.spec.ts` AC-11). Then `toHaveScreenshot("sign-in.png", { fullPage: true, maxDiffPixelRatio: 0.002 })`. The other two tests are not touched (AC-8).
+- `tests/e2e/__screenshots__/darwin/auth.spec.ts/sign-in.png` (delete): stale pre-logo baseline (Q2).
+- `tests/unit/sign-in-baseline.test.ts` (add): Vitest guard for AC-2 and AC-6. Reads files with `node:fs` from the repo root, like `tests/unit/brand-assets.test.ts`.
+  - Linux baseline: starts with the PNG signature, IHDR width/height (`readUInt32BE(16)`, `readUInt32BE(20)`) are 412 and 839, and sha256 is not `OLD_LINUX_SHA256`.
+  - Darwin baseline: `!existsSync(...)` or sha256 is not `OLD_DARWIN_SHA256`.
+  - Constants, verified with `git show <commit>:<path> | sha256sum`:
+    - `OLD_LINUX_SHA256 = "7a35d132beca98f4a1b9c01f572d5197b22415dbc34116d29cb1a2e88fd905bc"` (f78252c blob, also the current file)
+    - `OLD_DARWIN_SHA256 = "b10cacaab39de9818858589f57a6fa9e6230a39dc80d694b9d6549e5ee320a1e"` (fd2269a blob, also the current file)
+- `tests/e2e/__screenshots__/linux/auth.spec.ts/sign-in.png` (replace, release/QA stage): taken from the `linux-screenshots` artifact of a dispatched `e2e.yml` run with `update_snapshots=true` against the preview (Q1). Never generated locally.
+- Not changed: `playwright.config.ts` (global `maxDiffPixelRatio: 0.01` stays, AC-3), `src/`, `public/`, `supabase/`, `.github/` (AC-7).
+
+### Schema
+None. No migration, no `db-change` label.
+
+### Data flow
+Not applicable. No app code. The E2E test runs signed out against `/sign-in` on the Vercel preview.
+
+### Logic placement
+No `src/lib` logic. The PNG header and hash checks stay inline in the unit test. They're small enough that a shared helper isn't worth it. `brand-assets.test.ts` has a local `pngSize`; copy the 3-line IHDR read rather than refactor that file.
+
+### Test plan
+| AC | Check |
+|---|---|
+| AC-1 | CI E2E "sign-in page visual" passes on the preview built from the commit that includes the regenerated linux baseline. The `linux-screenshots` artifact of that run has a byte-identical `sign-in.png` (compare sha256 of the artifact and the committed file). |
+| AC-2 | `tests/unit/sign-in-baseline.test.ts`: IHDR 412x839, sha256 is not `OLD_LINUX_SHA256`. |
+| AC-3 | Code review of `auth.spec.ts` (per-call `maxDiffPixelRatio: 0.002`) and `playwright.config.ts` unchanged in `git diff`. 0.002 x 412 x 839 = 691 px, which is below the 4,096 px of a 64x64 logo. |
+| AC-4 | The new assertions in "sign-in page visual" run in CI E2E. |
+| AC-5 | One-off at verify, not committed: add `page.route(/concept-3/, r => r.abort())` locally against the preview. The regex runs on the full URL, so it matches both the direct `/brand/concept-3.svg` and `/_next/image?url=%2Fbrand%2Fconcept-3.svg…`. Confirm the `naturalWidth` poll fails. Then, with the wait commented out, confirm `toHaveScreenshot` fails against the new linux baseline. The comparison has to run on linux (CI-equivalent container or a dispatched run of a throwaway branch), since the darwin baseline is gone and would be written as missing. Record both outcomes in the PR description. |
+| AC-6 | Same unit test file: darwin file absent, or sha256 is not `OLD_DARWIN_SHA256`. |
+| AC-7 | Reviewer runs `git diff --name-only main...` and checks that only `tests/**` and `docs/specs/38-*` appear. |
+| AC-8 | Full CI E2E suite: "protected routes redirect to sign-in", "sign-in page offers Google sign-in" and all of `brand.spec.ts` pass, with no edits to them. |
+
+No seed data changes (`scripts/seed-staging.ts` untouched; the page is signed out).
+
+### Sequencing
+1. Commit 1 (build): edits to `auth.spec.ts`, darwin deletion, new unit test. Expected red until step 3: the unit guard (`ci.yml`) fails because the linux file is still the f78252c blob, and the E2E visual test fails on the tighter limit.
+2. Release/QA: after the preview deploys, `GH_HOST=github.com gh workflow run e2e.yml --repo bthomas466/manapals -f base_url=<preview URL> -f update_snapshots=true`. Download `linux-screenshots` and commit only `auth.spec.ts/sign-in.png`. Check that it shows the logo before committing.
+3. Commit 2's preview runs the normal E2E (AC-1), and the unit guard goes green.
+
+### Risks
+- **Red first commit is expected.** The unit guard and the visual test both fail until the regenerated baseline lands. Reviewers and the factory's verify stage shouldn't treat that as a regression. It's only done once step 3 is green.
+- **Wrong regenerated image.** `--update-snapshots` overwrites whatever the preview renders. If the logo hasn't loaded, a bad baseline is saved. The AC-4 wait runs before the screenshot in the same test, so it lowers this risk. Still look at the artifact PNG before committing it.
+- **Flakiness at 0.002.** Font anti-aliasing drift between runner images could cross 691 px. Watch the first two green runs. If the diff gets close, raise the limit, but keep it below about 0.005 (Q3).
+- **Darwin deletion.** On the next local macOS run, `updateSnapshots: "missing"` writes a new baseline and passes silently. That run doesn't check anything until the owner commits the file. This is accepted (Q2).
+- **Other baselines in the artifact.** The dispatched update run uploads the whole `__screenshots__/linux/` folder. Commit only `auth.spec.ts/sign-in.png`.
+- No privacy, RLS, performance or migration risk: the screenshot shows the signed-out page, and there's no schema change.
