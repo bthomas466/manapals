@@ -1,5 +1,5 @@
 # Size cards properly on larger screens
-Issue: #33 · PRD refs: US-08, §4.4, §4.6, §4.7, §5.1, §5.2 · Status: Draft
+Issue: #33 · PRD refs: US-08, §4.4, §4.6, §4.7, §5.1, §5.2 · Status: Approved
 
 ## Problem
 Every card grid in ManaPals is hard-coded to `grid grid-cols-3 gap-2.5`, with no breakpoints. On a phone (375–430px) that gives tiles about 108–130px wide, which works well. On wider screens the tiles keep growing with the viewport. At 768px each tile is about 240px wide. At 1440px it is about 465px wide, so roughly one row of three cards fills the screen. Browsing a collection of hundreds of cards on a tablet or laptop then means constant scrolling.
@@ -206,3 +206,106 @@ Mockup: [33-size-cards-larger-screens/mockup.html](33-size-cards-larger-screens/
 | E. Loading skeleton 375 and 1280 | Same column counts as the real grid | AC-8 |
 
 Not drawn (no visual change): the friends-only lock state (AC-13), the horizontal-scroll check (AC-10), and existing tests (AC-14). Design choices: the mockup follows the Q1 ladder (3/4/5/6/8/10) as recommended, and the page chrome stays full width (Q4).
+
+## Decisions (spec gate, 2026-10-14)
+Owner replied `approve` with no changes. Recommended defaults accepted for Q1–Q6: ladder 3/4/5/6/8/10 columns; keep `RENDER_BATCH_SIZE` (update comment only); keep `image_small`; page width not capped; new Playwright specs use `setViewportSize`; no PRD conflict.
+
+## Technical design
+
+Presentation-only change. One shared grid wrapper replaces the four copies of `grid grid-cols-3 gap-2.5`, using the approved 3/4/5/6/8/10 ladder with Tailwind v4's default breakpoints. No data, query, routing, caching or server-action changes. No migration.
+
+### Changes
+| File | Change |
+|---|---|
+| `src/lib/cards/grid.ts` (new) | Exports `CARD_GRID_CLASS` (a single literal string), `CARD_GRID_LADDER` (the breakpoint to column table, as data), and the pure helpers `cardGridColumns(viewportWidth)` and `cardTileWidth(viewportWidth, { padding = 32, gap = 10 })` |
+| `src/components/cards/CardGrid.tsx` (new) | A tiny wrapper with no hooks and no `"use client"`: `<div data-testid={testId ?? "card-grid"} className={CARD_GRID_CLASS}>{children}</div>`. It works from both server and client components. |
+| `src/components/collection/CollectionGrid.tsx` | The tile `<div className="grid grid-cols-3 gap-2.5">` (line 157) becomes `<CardGrid>`. Nothing else changes. |
+| `src/components/wishlist/WishlistGrid.tsx` | The outer grid div (line 16) becomes `<CardGrid>`. |
+| `src/components/trades/MatchSection.tsx` (new) | `MatchSection` and `MatchTile` move here unchanged from the trades page, and the section grid becomes `<CardGrid>`. They are extracted so the empty-section state can be unit-tested, because Next page files may only export page-convention names. |
+| `src/app/(main)/trades/[username]/page.tsx` | Removes the local `MatchSection`/`MatchTile` and imports `MatchSection` from `@/components/trades/MatchSection`. Data fetching and matching are unchanged. |
+| `src/app/(main)/collection/loading.tsx` | The skeleton grid (line 18) becomes `<CardGrid testId="card-grid-skeleton">`, with the same 9 placeholder tiles. |
+| `src/lib/collection/batches.ts` | Comment only. "20 rows of the 3-column grid" becomes "20 rows of the 3-column mobile grid; wider grids may end a batch on a partial row (spec #33 Q2)". `RENDER_BATCH_SIZE` stays 60. |
+| `tests/unit/card-grid.test.ts` (new) | Unit tests for the ladder and tile math, plus the class and wiring checks (see Test plan). |
+| `tests/e2e/authed/card-grid-sizing.spec.ts` (new) | Read-only geometry checks across the viewports (see Test plan). |
+
+Unchanged: `profile/page.tsx` (stats row), `CardTradeSheet`, `WishlistRemoveButton`, the tile markup and badges, `CollectionView`, `/u/[username]/page.tsx` (it already renders `CollectionGrid` and `WishlistGrid`, so it picks up the change automatically), `scripts/seed-staging.ts`, and `playwright.config.ts`.
+
+**The shared class (exact literal):**
+```ts
+export const CARD_GRID_CLASS =
+  "grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10";
+```
+- It must stay one complete string literal, with no template interpolation and no building it from `CARD_GRID_LADDER`. Tailwind v4 finds class names by scanning source files (everything under `src/` is scanned, since nothing there is gitignored). Generated names would not be emitted.
+- The unprefixed part, `grid grid-cols-3 gap-2.5`, is identical to today. Below 640px the computed CSS is byte-for-byte the same, so mobile does not change (AC-1, AC-2, AC-14).
+- `gap-2.5` applies at every width. All grids sit inside the existing `px-4` page containers, so the tile math is `(vw − 32 − gap·(n−1)) / n`.
+
+| Viewport | Columns | Tile width range (px) |
+|---|---|---|
+| <640 | 3 | 107.7 (375) to 202.3 (639; out of AC-4 range) |
+| 640–767 (`sm`) | 4 | 144.5–176.3 |
+| 768–1023 (`md`) | 5 | 139.2–190.2 |
+| 1024–1279 (`lg`) | 6 | 156.7–199.5 |
+| 1280–1535 (`xl`) | 8 | 147.25–179.1 |
+| 1536–1920 (`2xl`) | 10 | 141.4–179.8 |
+
+At 639px tiles are about 202px, which is fine because AC-4 starts at 640. Every 640–1920 width stays at or under 200px, and the column count only goes up.
+
+### Schema
+None. No migration, no RLS changes, no backfill.
+
+### Data flow
+- Unchanged. `/collection` and `/u/[username]` still fetch through `getCollectionItems`, `/wishlist` through `getWishlistItems`, and `/trades/[username]` through `computeTradeMatches`, all in server components.
+- `CardGrid` is a stateless presentational component. It renders inside the client `CollectionGrid` and inside the server `WishlistGrid`, `MatchSection` and `loading.tsx`. That is valid because it has no hooks and no server-only imports.
+- `MatchSection` stays a server-renderable component (no `"use client"`). Moving it out of the page file does not change the RSC payload.
+
+### Logic placement
+- The ladder and tile-width math are pure functions in `src/lib/cards/grid.ts`, and unit tests check them against AC-2, AC-4, AC-5 and AC-6.
+- Pages keep only fetching and rendering. The single class constant plus the single wrapper is what keeps the four grids from drifting apart (AC-7, AC-8), and a wiring test enforces it.
+
+### Test plan
+**Unit (Vitest, `tests/unit/card-grid.test.ts`).** The file is `.test.ts` and renders with `createElement` and `renderToStaticMarkup`, the same pattern as `collection-summary-view.test.ts`.
+| AC | Test |
+|---|---|
+| AC-1, AC-6 | `cardGridColumns` returns 3 at 375, 412 and 639, then 4/5/6/8/8/10 at 640/768/1024/1280/1440/1920. A sweep from 320 to 1920 never decreases. It returns ≥5 at 1024 and ≥7 at 1440. |
+| AC-2 | `cardTileWidth(375)` is in [107, 109] and `cardTileWidth(412)` is in [119, 121]. |
+| AC-4, AC-5 | For every integer width from 640 to 1920, `cardTileWidth` is ≤ 200. For every width from 375 to 1920 it is ≥ 100. |
+| Ladder and class in sync | For each `CARD_GRID_LADDER` entry, `CARD_GRID_CLASS` contains the matching `grid-cols-N` token with the right prefix. It starts with `grid grid-cols-3 gap-2.5`. |
+| AC-7, AC-8 (wiring) | Render `CollectionGrid` (one item, with and without `onSelect`), `WishlistGrid` (one item, `editable: false`; `vi.mock("@/components/wishlist/WishlistRemoveButton", …)` to a stub so `next/navigation` and the server action aren't loaded), `MatchSection` (one card), and the default export of `collection/loading.tsx`. Each output contains `class="${CARD_GRID_CLASS}"`. The first three contain `data-testid="card-grid"` and the skeleton contains `data-testid="card-grid-skeleton"`. A `readFileSync` check (like `collection-readers-wiring.test.ts`) confirms none of the four source files still contains `grid-cols-3 gap-2.5`. |
+| AC-8 | The skeleton output from `loading.tsx` contains `aria-label="Loading collection"` and uses `CARD_GRID_CLASS`, so its column count matches the real grid at every viewport, including 375 and 1280. This is the reliable form the spec allows. A route-delay Playwright test would be flaky against streaming. |
+| AC-12 (match section) | `MatchSection` with `cards: []` renders the `emptyText` and no `data-testid="card-grid"`. |
+| AC-12 (collection) | `CollectionGrid` with `items: []` renders only `emptyState`, with no grid. |
+
+**E2E (`tests/e2e/authed/card-grid-sizing.spec.ts`, read-only, `authed` project).**
+- Setup: `requireE2EUser()`. Each test calls `page.setViewportSize({ width, height })` before `page.goto`.
+- Grids are found with `page.getByTestId("card-grid")`. Tiles are each grid's direct children, `grid.locator(":scope > *")`.
+- Column count: `getComputedStyle(el).gridTemplateColumns.split(" ").length`.
+- Gap: `getComputedStyle(el).columnGap`, or the left edge of tile 2 minus the right edge of tile 1.
+- Wait for `getByRole("img", { name: "Sol Ring" })` (or the page's known card) before measuring, so the grids have rendered.
+- Expected column counts are hard-coded in the spec (`{375:3, 412:3, 639:3, 640:4, 768:5, 1024:6, 1280:8, 1440:8, 1920:10}`) as an independent oracle. The spec does not import `src/`.
+
+| AC | E2E test |
+|---|---|
+| AC-1 | For 375, 412 and 639, on each page under test (`/collection`, `/u/e2e_friend`, `/wishlist`, `/trades/e2e_friend`): every `card-grid` has 3 tracks and a column gap of 10px ±1. |
+| AC-2 | `/collection` tile `boundingBox().width` is 107–109 at 375 and 119–121 at 412. |
+| AC-3 | At 375 on `/collection`: each tile's button (`getByRole("button", { name: /^Sol Ring,/ })` and the others) is ≥44×44, and each filter chip (`getByRole("button", { name: "All" })` and the rest) has height ≥44. At 375 on `/wishlist`: the remove button's box equals today's size within ±1px. The builder measures it on `main` before making the change and hard-codes the value, because the button's classes are not touched. |
+| AC-4, AC-5, AC-9, AC-10 | A loop over all 9 viewports × 4 pages. Every tile is ≤200 wide (only for widths ≥640) and ≥100 wide. Height ÷ width is 1.4 ±0.02. `document.documentElement.scrollWidth <= window.innerWidth`. |
+| AC-6 | `/collection` at the viewports in ascending order: the column counts never decrease, and they are ≥5 at 1024 and ≥7 at 1440 (exact match with the table above). |
+| AC-7 | For each viewport, collect `{columns, firstTileWidth}` for every grid across the 4 pages: 1 on `/collection`, 2 on `/u/e2e_friend`, 1 on `/wishlist`, 3 on `/trades/e2e_friend`. All column counts are equal and the tile widths are within 1px. `/u/e2e_friend` must show exactly 2 grids and `/trades/e2e_friend` exactly 3. |
+| AC-8 | Covered by the unit test (see above). |
+| AC-11 | At 1280 on `/collection`, the foil badge (`✨`) inside the Lightning Bolt tile has a bounding box inside the tile's box. Clicking the button named `/^Sol Ring,/` makes `getByRole("dialog", { name: "Trade status for Sol Ring" })` visible. Close it without changing anything (read-only). At 1280 on `/trades/e2e_friend`, every `$`-prefixed price badge is inside its tile's box. |
+| AC-12 | At 1280 on `/collection`, fill "Search cards..." with `zzzz-no-match`. "No cards match your filters." is visible and there is no horizontal scroll. The empty match section is covered by the unit test, since the seed fills all three sections. |
+| AC-13 | At 1280 on `/u/e2e_stranger`, the lock text is visible and `getByTestId("card-grid")` has count 0. |
+| AC-14 | The existing suite runs unchanged in CI. No `--update-snapshots`, and `sign-in.png` is untouched (`/sign-in` has no card grid). |
+
+Seed data: no changes to `scripts/seed-staging.ts`. Everything above relies on the existing seed: 4 player tiles including foil Lightning Bolt and Sol Ring ×2, the friend's collection and wishlist, the player's wishlist, one tile in each match section, and a non-friend `e2e_stranger`.
+
+Viewport note: all projects use `devices["Pixel 7"]` (`isMobile: true`), so Chromium uses overlay scrollbars. `window.innerWidth` is the full viewport width, and the tile math above is exact. If a desktop project with classic scrollbars is added later, tiles get narrower by about 15px/n. That only moves them further under the 200px cap.
+
+### Risks
+- **Tailwind class detection:** if someone later builds `CARD_GRID_CLASS` dynamically (for example `` `grid-cols-${n}` ``), the breakpoint classes silently disappear and every width falls back to 3 columns. Mitigation: the literal-string rule above, plus the unit test that asserts the exact tokens. The E2E column checks at ≥640 also catch it.
+- **Mobile regression:** low risk. The unprefixed classes are unchanged and `sm:` starts at 640px, above every phone width. AC-1 and AC-2 guard this.
+- **Wider-screen image quality and bandwidth:** tiles are now 140–200px CSS with `image_small` (146px), so they are still slightly upscaled on high-DPI screens. That is accepted (Q3). More tiles are on screen at once, so the first view loads more lazy images, up to one 60-tile batch (about 8 rows at 8 columns). No new requests per tile. DOM size stays bounded by `RENDER_BATCH_SIZE`.
+- **Partial last row per batch at 8 columns:** accepted (Q2). Only the comment is updated.
+- **Privacy and RLS:** no change. `CardGrid` renders only children its parents already render. Pages that don't render a grid today (the stranger lock state) still don't (AC-13).
+- **Moving `MatchSection`:** a pure code move. The risk is limited to imports. `next build` and `typecheck` catch any break, and the existing `seeded-data.spec.ts` trade tests cover behaviour.
+- **Migrations:** none.

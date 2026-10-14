@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import CardGrid from "@/components/cards/CardGrid";
 import type { TradeStatus } from "@/lib/trades/flags";
 import { batchWindow } from "@/lib/collection/batches";
 
@@ -154,11 +155,11 @@ export default function CollectionGrid({
         </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5">
+      <CardGrid>
         {matches.slice(0, visibleCount).map((item) => (
           <CardTile key={item.id} item={item} onSelect={onSelectItem} />
         ))}
-      </div>
+      </CardGrid>
 
       {hasMore && (
         <>

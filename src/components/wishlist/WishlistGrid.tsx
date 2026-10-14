@@ -1,4 +1,5 @@
 import type { WishlistItem } from "@/lib/wishlist/queries";
+import CardGrid from "@/components/cards/CardGrid";
 import WishlistRemoveButton from "./WishlistRemoveButton";
 
 export default function WishlistGrid({
@@ -13,11 +14,11 @@ export default function WishlistGrid({
   if (items.length === 0) return <>{emptyState}</>;
 
   return (
-    <div className="grid grid-cols-3 gap-2.5">
+    <CardGrid>
       {items.map((item) => (
         <WishlistTile key={item.id} item={item} editable={editable} />
       ))}
-    </div>
+    </CardGrid>
   );
 }
 

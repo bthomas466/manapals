@@ -1,3 +1,5 @@
+import CardGrid from "@/components/cards/CardGrid";
+
 export default function CollectionLoading() {
   return (
     <div className="px-4 pt-6 space-y-4 pb-4 animate-pulse" aria-busy="true" aria-label="Loading collection">
@@ -15,11 +17,11 @@ export default function CollectionLoading() {
           <div key={i} className="h-11 w-16 shrink-0 rounded-[--radius-chip] bg-elevated" />
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2.5">
+      <CardGrid testId="card-grid-skeleton">
         {Array.from({ length: 9 }, (_, i) => (
           <div key={i} className="aspect-[5/7] rounded-[--radius-chip] bg-elevated border border-border" />
         ))}
-      </div>
+      </CardGrid>
     </div>
   );
 }
