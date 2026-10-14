@@ -88,6 +88,8 @@ test("AC-3: a finished user stays on /collection and /welcome redirects there", 
 
 test("AC-4: the seeded marker is set for pre-existing profiles and e2e_player is not gated", async ({ page }) => {
   expect(profileSnap!.onboarded_at).not.toBeNull();
+  // beforeEach clears e2e_player's marker; restore the seeded value before querying.
+  await setOnboardedAt(profileSnap!.onboarded_at);
   const { client } = await e2eSession();
   const { data, error } = await client
     .from("profiles")
@@ -97,7 +99,6 @@ test("AC-4: the seeded marker is set for pre-existing profiles and e2e_player is
   expect(error).toBeNull();
   expect(data).toEqual([]);
 
-  await setOnboardedAt(profileSnap!.onboarded_at);
   await page.goto("/collection");
   await expect(page).toHaveURL(/\/collection$/);
 });
