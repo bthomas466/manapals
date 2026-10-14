@@ -1,5 +1,5 @@
 # New user onboarding wizard
-Issue: #34 · PRD refs: US-02, US-03, US-04, US-06, US-07, §1.3, §4.2, §5.2, §5.3 · Status: Draft
+Issue: #34 · PRD refs: US-02, US-03, US-04, US-06, US-07, §1.3, §4.2, §5.2, §5.3 · Status: Approved
 
 ## Problem
 A new user signs in with Google and lands on `/collection`, which says "No cards yet" and nothing else. The app never explains how to get data out of Manabox (US-02). Users are also never asked to choose an identity: the `handle_new_user` trigger (`supabase/migrations/20260803150034_friend_graph.sql`) quietly gives them a username taken from their email prefix (for example `jsmith1987` or `player_42`). The only place to change it is a small "Edit" link on `/profile`. As a result, the profile URL a new user would share with friends (US-06, `/u/<username>`) is one they never chose and may not know about.
@@ -291,3 +291,183 @@ Mockup: [mockup.html](34-new-user-onboarding-wizard/mockup.html) · Screenshot: 
 | S9 ImportCollectionModal with "How to export from Manabox" disclosure | AC-26 |
 
 Design choices: progress is a two-segment bar plus "Step N of 2" text (not colour alone). Step 2 confirm adds a "Choose a different file" secondary button. The done state shows a "You're all set" heading above the imported count.
+
+## Decisions (spec gate, 2026-10-14)
+Owner replied "approve" with no changes. Recommended defaults accepted for all open questions:
+1. Draft Manabox copy kept, stored as data in `src/lib/**`; owner to verify labels against the live app.
+2. Avatar: keep or remove the Google photo only; no upload.
+3. `ensureProfile` sets the marker when it provisions a row (treated as an existing user).
+4. No step persistence; wizard reopens at step 1 pre-filled.
+5. Deep-link carry-through is out of scope (follow-up).
+6. Skip sets the marker.
+7. Replace wording dropped in the wizard when 0 rows exist.
+8. 50-character display name maximum in the shared validation.
+9. Gate placement is the architect's call.
+
+## Technical design
+
+### Decisions
+- **Route:** `/welcome`. It lives at `src/app/(onboarding)/welcome/page.tsx`, outside the `(main)` group, so `BottomNav` is never mounted (AC-29). There is no new layout; the root layout is enough.
+- **Marker:** `profiles.onboarded_at timestamptz null`. It's nullable to match the ACs' "null marker" wording (AC-4, AC-6, AC-32). Privacy: `profiles_select_authenticated` already exposes `created_at` and `updated_at` on every row to all signed-in users, so a third timestamp reveals nothing materially new. No column-level grant changes.
+- **Gate placement (Q9): `src/proxy.ts`.**
+  - The proxy already runs `auth.getUser()` on every page request. It covers `/` (which is outside `(main)`), `/u/*` and client-side RSC navigations.
+  - A `(main)` layout check would not re-run on client navigations (Partial Rendering; see `node_modules/next/dist/docs/01-app/02-guides/authentication.md`, "Layouts and auth checks").
+  - Cost: one PK lookup (`select onboarded_at … where user_id = $1`) per signed-in page request. See Risks.
+- **Gate rules:**
+  - Only `GET`/`HEAD` requests are gated. Server-action POSTs (which post to the page URL) pass through and do their own auth.
+  - `/api/*` and `/sign-in` are never gated (AC-5 behaviour is unchanged: signed-out users go to `/sign-in` first).
+  - If the profile row is missing or the read fails, the gate fails open (AC-6).
+- **Marking on import (AC-19):** after a successful `replace_collection_items`, `POST /api/collection/import` runs `update profiles set onboarded_at = now() where user_id = me and onboarded_at is null`. This is best-effort: an error is logged and the import response is unchanged. For onboarded users it's a 0-row no-op.
+  - **Go to my collection** and **Skip for now** both call the `completeOnboarding()` server action, which is idempotent and then redirects. So a failed best-effort mark is repaired on the next tap.
+  - Navigation to `/collection` uses the action's `redirect()`, not a `<Link>`, so no gated prefetch of `/collection` is cached while the marker is unset.
+- **Avatar:** the client sends only `removeAvatar: boolean`. The server writes `avatar_url = null` when it's true and otherwise leaves the column alone. No URL is ever accepted from the client.
+- **Display-name max of 50 (decision 8)** is enforced in the shared validator only, not as a DB constraint, because `handle_new_user` inserts the Google `full_name`, which can exceed 50 characters. A constraint would break signups.
+- **Import flow reuse:** move the modal's state machine (parse → confirm → POST → done/error) into a hook. The modal keeps its exact markup and copy. The wizard renders the same states inline with the wizard copy ("Import cards", "Choose a different file", "You're all set"). It shows the replace wording and the "Replace collection" button only when `hasExistingCards` is true (decision 7, AC-18, AC-23).
+- **AC-28 exemption:** the instructions contain no inline links, so no exemption is needed. Every wizard `button`/`input` gets `min-h-11` (44px). The only `a`-like element is the wordmark, which is rendered as text, not a link.
+- **Skills note:** the `supabase` and `supabase-postgres-best-practices` skills aren't installed in this environment. I checked the migration against the existing migration conventions and PostgreSQL's fast-default semantics by hand.
+
+### Changes
+| File | Change |
+|---|---|
+| `supabase/migrations/20261014120000_onboarding_marker.sql` | **New.** Adds `profiles.onboarded_at` and backfills existing rows (see Schema). |
+| `src/lib/profile/validate.ts` | **New, pure.** `validateProfileInput({ displayName, username })` returns `{ ok: true, value: { displayName (trimmed), username (trimmed and lower-cased) } } \| { ok: false, error }`. Also exports `normalizeUsernameInput(s)` (lower-cases as you type), `profileSaveError(code)` (`23505` → "That username is taken.", anything else → "Couldn't update profile."), and the message constants: AC-9, AC-11, and "Display name must be 50 characters or fewer." Display name is checked first, then username, as today. |
+| `src/lib/onboarding/gate.ts` | **New, pure.** `needsOnboarding(profile: { onboarded_at: string \| null } \| null): boolean` (AC-6). `onboardingRedirect({ pathname, method, profile })` returns `"/welcome" \| "/collection" \| null`. It handles the GET/HEAD-only rule, skips `/api` and `/sign-in`, sends un-onboarded users on any other path to `/welcome`, and sends onboarded users on `/welcome` to `/collection`. Exports `WELCOME_PATH`. |
+| `src/lib/onboarding/manaboxInstructions.ts` | **New, data.** `MANABOX_EXPORT_STEPS`: five steps, each an array of `{ text, bold? }` segments, using the draft copy (Q1). Also `MANABOX_EXPORT_TIP`. |
+| `src/lib/onboarding/actions.ts` | **New, `"use server"`.** `saveOnboardingProfile({ displayName, username, removeAvatar })` validates with `validateProfileInput`, then updates `display_name`, `username` and, only if `removeAvatar`, `avatar_url: null`. It never writes `onboarded_at` (AC-12) and maps errors with `profileSaveError`. `completeOnboarding()` sets `onboarded_at = now()` scoped by `.eq("user_id", user.id).is("onboarded_at", null)`, touches nothing else (AC-31), then `redirect("/collection")`. It returns `{ error: "Couldn't finish setup. Try again." }` on a DB error. |
+| `src/lib/friends/actions.ts` | `updateProfile` uses `validateProfileInput` and `profileSaveError`. Its behaviour is the same except for the new 50-character limit. |
+| `src/lib/profile/ensure.ts` | Adds `onboarded_at` to the `Profile` type and `PROFILE_COLUMNS`. The lazy-provision insert sets `onboarded_at: new Date().toISOString()` (decision 3). |
+| `src/proxy.ts` | For a signed-in user on a gate-eligible request, reads `profiles.onboarded_at` and applies `onboardingRedirect`. The redirect response copies `supabaseResponse`'s cookies so refreshed session cookies aren't dropped. The existing signed-out and `/sign-in` logic is unchanged. |
+| `src/app/(onboarding)/welcome/page.tsx` | **New server component.** Calls `getUser()` (redirects to `/sign-in` if signed out) and `ensureProfile()`. As a defensive double-check behind the proxy, it redirects to `/collection` if `onboarded_at` is set. It runs `collection_items select id where user_id = me limit 1` to get `hasExistingCards`, then renders `<OnboardingWizard>` with `{ displayName, username, avatarUrl, hasExistingCards }`. |
+| `src/components/onboarding/OnboardingWizard.tsx` | **New client component.** Header with the wordmark, a two-segment progress bar and "Step N of 2". Holds the step state (1 or 2) and the saved field values, so Back shows the saved values (AC-25). |
+| `src/components/onboarding/ProfileStep.tsx` | **New client component.** Avatar or placeholder; **Remove photo** sets local `removeAvatar` and shows the placeholder. Display name input, `@` username input using `normalizeUsernameInput`, live `/u/<username>` preview, privacy note, and **Continue** ("Saving…" while pending). Calls `saveOnboardingProfile` inside `try/catch`: a rejected action (such as a 500) shows "Couldn't update profile." and keeps the inputs (AC-14). No Skip control (AC-8). |
+| `src/components/onboarding/ImportStep.tsx` | **New client component.** Title "Import your collection", `<ManaboxInstructions>`, and the inline import states from `useCollectionImport`. **Back** and **Skip for now** appear in the pick and error states only. Done state: "You're all set", "Imported M cards", the unmatched list, and **Go to my collection** (calls `completeOnboarding`). |
+| `src/components/onboarding/ManaboxInstructions.tsx` | **New.** Renders `MANABOX_EXPORT_STEPS` as an `<ol>` plus the tip. Shared by the wizard and the modal (AC-17, AC-26). |
+| `src/components/collection/useCollectionImport.ts` | **New client hook,** extracted from `ImportCollectionModal`: `{ step, chooseFile(file), confirm(rows), reset() }`. The `Step` union and the fetch/error handling are unchanged. Takes an `onSuccess` callback. |
+| `src/components/collection/ImportCollectionModal.tsx` | Uses `useCollectionImport` (`onSuccess: router.refresh`). The pick step gains a `<details>` disclosure, "How to export from Manabox", wrapping `<ManaboxInstructions>`. Nothing else changes. |
+| `src/app/api/collection/import/route.ts` | After a successful RPC, marks onboarding best-effort, as described above. |
+| `scripts/seed-staging.ts` | The profile upsert adds `onboarded_at: new Date().toISOString()` for all seeded users. Without it, a freshly created `e2e_friend`/`e2e_stranger` would be gated, and re-seeding repairs a marker left cleared by an aborted wizard spec. |
+| `tests/e2e/supabase.ts` | Adds `snapshotProfile()` and `restoreProfile(snap)` (username, display_name, avatar_url, onboarded_at, collection_visibility) and `setOnboardedAt(value \| null)` for `e2e_player`. |
+| `tests/e2e/fixtures/onboarding-valid.csv`, `tests/e2e/fixtures/onboarding-no-rows.csv` | **New fixtures.** Valid: two or three seeded cards by Name + Set Code (for example Sol Ring/cmr and Lightning Bolt/m10) plus one row `Not A Real Card`/`zzz` that won't match (AC-22). No-rows: correct headers, no data rows. |
+| Tests | See Test plan. |
+
+### Schema
+`supabase/migrations/20261014120000_onboarding_marker.sql`:
+```sql
+-- =========================================================
+-- #34 onboarding wizard: per-profile "finished onboarding" marker.
+-- NULL = the user still has to go through /welcome.
+-- =========================================================
+
+-- Backfill trick: adding the column with a non-volatile default (now() is
+-- STABLE) is a catalog-only change on PG11+; every existing row reads the
+-- migration's timestamp without a table rewrite and without firing the
+-- profiles_set_updated_at trigger. Dropping the default afterwards leaves
+-- existing rows marked and makes new rows (handle_new_user, ensureProfile's
+-- insert) default to NULL.
+alter table public.profiles
+  add column onboarded_at timestamptz default now();
+
+alter table public.profiles
+  alter column onboarded_at drop default;
+
+comment on column public.profiles.onboarded_at is
+  'When the user finished (or skipped) the onboarding wizard. NULL = not yet onboarded; gated to /welcome.';
+
+-- Guard: every pre-existing profile must be marked (AC-4).
+do $$
+begin
+  if exists (select 1 from public.profiles where onboarded_at is null) then
+    raise exception 'onboarded_at backfill incomplete';
+  end if;
+end;
+$$;
+
+-- RLS: no new policies. profiles_update_own (owner-only USING/WITH CHECK)
+-- already governs writes to this column; profiles_select_authenticated
+-- governs reads. No index: the only lookup is by primary key (user_id).
+```
+- **Backfill:** every existing row gets the migration timestamp. Rows inserted after commit get NULL. `handle_new_user` is not changed (AC-32).
+- **Locking:** `ALTER TABLE` takes a brief `ACCESS EXCLUSIVE` lock. Signups block on it for milliseconds, then insert with NULL. There's no rewrite.
+- **Additive and reversible:** `alter table public.profiles drop column onboarded_at;`
+- **Label:** the PR needs `db-change`.
+
+### Data flow
+1. **Proxy** (`src/proxy.ts`, every non-static request):
+   - Calls `getUser()`, as today.
+   - For a signed-in user on a gated GET/HEAD path, reads `profiles.onboarded_at` by PK with the user's cookie client (RLS select).
+   - `onboardingRedirect` then decides whether to redirect to `/welcome`, redirect to `/collection`, or pass through.
+2. **`/welcome` page (server):** `getUser`, `ensureProfile`, and the `collection_items` existence probe (`limit 1`, indexed by `collection_items_user_id_idx`). Passes props to the client wizard. Nothing is cached; the page is dynamic because it reads cookies.
+3. **Step 1 (client):** the `saveOnboardingProfile` server action updates the user's own `profiles` row under RLS (`profiles_update_own`).
+4. **Step 2 (client):**
+   - `parseManaboxCsv` runs in the browser.
+   - `POST /api/collection/import` (route handler, not gated) does the unchanged import and then the best-effort mark.
+   - Skip and "Go to my collection" call the `completeOnboarding` server action, which redirects to `/collection`.
+5. **`/collection` modal:** the unchanged flow through `useCollectionImport`, plus the static instructions disclosure.
+
+### Logic placement
+- Pure, unit-tested: `src/lib/profile/validate.ts`, `src/lib/onboarding/gate.ts`, `src/lib/onboarding/manaboxInstructions.ts`.
+- Server actions: `src/lib/onboarding/actions.ts`, following the `src/lib/friends/actions.ts` convention. They only validate (by calling the pure functions) and write.
+- `proxy.ts` and `welcome/page.tsx` only fetch and delegate decisions to `gate.ts`.
+
+### Test plan
+**Vitest (`tests/unit/`)**
+| File | Covers |
+|---|---|
+| `profile-validate.test.ts` | **AC-16:** accepts `abc`, `a_b_1` and a 20-character name. Rejects `ab`, 21 characters, `a-b`, `a b` and `""` with the AC-9 message. Rejects blank or whitespace-only display names with the AC-11 message. Rejects a 51-character display name with the max-length message. Returns the trimmed and lower-cased values. Also covers **AC-9** (`normalizeUsernameInput("Sam_R") === "sam_r"`), `profileSaveError` (AC-10, AC-14 copy), and **both paths**: `updateProfile` (with `@/lib/supabase/server` mocked) returns the same messages and sends the trimmed/lowered payload. |
+| `onboarding-gate.test.ts` | **AC-6:** `needsOnboarding` returns true for null, false when set, false for a null profile. `onboardingRedirect` logic: **AC-1, AC-2** (`/`, `/collection`, `/trades`, `/trades/x`, `/wishlist`, `/profile`, `/u/e2e_friend` → `/welcome` when unset); **AC-3** (`/welcome` → `/collection` when set; `/collection` → null); `/api/*`, `/sign-in`, POST requests and null profiles → null. |
+| `manabox-instructions.test.ts` | **AC-17/26 data:** at least 3 steps, and the joined text contains "Manabox", "Export" and "CSV". |
+| `onboarding-actions.test.ts` | Supabase mocked. **AC-12:** `saveOnboardingProfile` sends only display_name and username, never `onboarded_at`, and stops at an invalid input. **AC-13:** `avatar_url: null` only when `removeAvatar`. **AC-10:** `23505` maps to the taken message. **AC-31:** `completeOnboarding` updates only `onboarded_at`, scoped `.eq(user_id).is(onboarded_at, null)`, and redirects to `/collection`. |
+| `ensure-profile.test.ts` | Q3: the provisioned insert includes a non-null `onboarded_at`. An existing row is returned untouched. |
+| `import-route.test.ts` (update) | **AC-19:** on success, the profiles update is called with `.is("onboarded_at", null)`. A failing marker update still returns 200 with `imported`. **AC-20/21 (server side):** the 400/422/500/502 paths never touch `profiles`. Update the existing `from` mock to return a chainable `update().eq().is()`. |
+
+**Playwright**
+
+`tests/e2e/authed/onboarding.serial.spec.ts` (authed-serial project). In `beforeAll`, call `snapshotProfile()` + `snapshotCollection()`. In `afterAll`, call `restoreProfile` + `restoreCollection`. Each test sets its preconditions with `setOnboardedAt(null)` and/or the collection fixtures.
+
+| AC | What the test does |
+|---|---|
+| **AC-1, 2, 8** | Marker null. `goto` each of `/collection`, `/`, `/trades`, `/wishlist`, `/profile`, `/u/e2e_friend` and expect `/welcome` plus "Step 1 of 2". No "Skip" control on step 1. |
+| **AC-3** | Marker set. `/collection` stays put with no "Step 1 of 2" text; `/welcome` goes to `/collection`. |
+| **AC-4** | `e2e_player` with the seeded marker reaches `/collection` without a redirect. A query via `e2eSession()` for profiles with `onboarded_at is null and created_at < '2026-10-14T12:00:00Z'` returns `[]`. (This is readable under `profiles_select_authenticated`.) |
+| **AC-7** | Inputs hold "E2E Player" and `e2e_player`; `/u/e2e_player` is visible. Type `new_name` and `/u/new_name` appears. |
+| **AC-9** | Enter `ab` and Continue: the message shows, and a DB read confirms the username is unchanged. Type `Sam_R` and the input shows `sam_r`. |
+| **AC-10** | Enter `e2e_friend` and Continue: "That username is taken." |
+| **AC-11** | Enter `"   "` and Continue: "Display name is required." |
+| **AC-12** | Valid save shows "Step 2 of 2". The DB row has the new values and `onboarded_at` is null. |
+| **AC-13** | Set `avatar_url = '/favicon.ico'` via `e2eSession` (same-origin, so no external fetch). The image and "Remove photo" show. Tap it, then Continue, and the DB shows null. With null, the placeholder shows and the control is absent. |
+| **AC-14** | `page.route("**/welcome", …)` fulfils 500 for POST requests carrying a `next-action` header. "Couldn't update profile." shows and the values are kept. |
+| **AC-15** | Step 1 contains "Only friends can see your collection". |
+| **AC-17, 24, 25** | The step 2 `ol` has at least 3 items with the required words; the three buttons show. Back shows the saved username. Skip (with an empty collection) lands on `/collection` with "No cards yet"; after reload it's still `/collection`. |
+| **AC-18, 19, 22** | Empty collection, `setInputFiles(onboarding-valid.csv)`. "Found N cards" shows with no "replace" text. "Import cards" leads to "Imported M cards", "1 card couldn't be matched", the bogus card's name, and "Go to my collection". Reload `/collection` before tapping it and there's no redirect (AC-19). Tapping it shows card tiles. |
+| **AC-20** | `onboarding-no-rows.csv` shows the parser error and "Try another file". The marker is null and there are 0 collection rows. |
+| **AC-21** | Intercept `/api/collection/import` with a 500 `{error:"Import failed."}`. The message and "Try another file" show, and the marker is null. |
+| **AC-23** | Seed rows with `restoreCollection([...])` and clear the marker. The confirm text contains "replace your current collection". |
+| **AC-26** | Marker set. Open the `/collection` Import modal and tap "How to export from Manabox". The `ol` item texts equal `MANABOX_EXPORT_STEPS` rendered text (imported from `src/lib`). |
+| **AC-27** | `setViewportSize` to 375 and to 390. Check `scrollWidth <= innerWidth` for step 1, step 1 error, step 2, step 2 parse error, and the done state. |
+| **AC-28** | Every visible `button`, `input` and `a` in `main` has a bounding-box height of at least 44 on both steps. The hidden file input is excluded because it isn't visible. |
+| **AC-29** | No `nav` containing a "Collection" link on `/welcome`. |
+| **AC-31** | `collection_visibility` is `friends` after finishing by skip and after finishing by import. |
+
+`tests/e2e/authed/onboarding-rls.serial.spec.ts` (node clients only):
+- **AC-30:** `e2e_player` updates `e2e_friend`'s `onboarded_at` to null and to now. Both return `data: []`, and the friend's value is unchanged.
+- **AC-32:** with `SUPABASE_SERVICE_ROLE_KEY` set (the CI E2E job env has it; skip otherwise), `admin.auth.admin.createUser` makes a throwaway `onboarding-test+<uuid>@manapals.test`. Its profile's `onboarded_at` is null. Delete the user in `finally`.
+
+`tests/e2e/onboarding.spec.ts` (mobile project, signed out):
+- **AC-5:** `goto('/welcome')` ends on `/sign-in`.
+
+**Seed:** `scripts/seed-staging.ts` sets `onboarded_at` on all three seeded users (see Changes). No new cards are needed: the fixture uses already-seeded cards plus one deliberately unmatched row. That row triggers one Scryfall `/cards/collection` call, which is the same dependency as the existing import specs.
+
+**Screenshots:** if the wizard spec takes `toHaveScreenshot` baselines, take them from the `linux-screenshots` artifact.
+
+### Risks
+- **Proxy latency:** every signed-in page request (including RSC navigations and prefetches) gets one extra PostgREST PK read, roughly 10–30 ms. This is acceptable for v1. If it shows up in metrics, the follow-up is a signed, user-bound "onboarded" cookie set by `completeOnboarding` that skips the read. Don't build it now; E2E would then need to clear that cookie when it clears the marker.
+- **Release ordering (prod):**
+  - **Code before migration:** the proxy read would error. The gate fails open, so nothing breaks there. But `ensureProfile`'s select (now including `onboarded_at`) would fail, so `/profile` would render without a profile. The documented order (merge → approve the prod migration → promote) avoids this. **Do not promote before `Migrate production` succeeds.**
+  - **Migration before promotion:** users who sign up in the window between the prod migration and the promote get a null marker, and they'll see the wizard on their next visit after promotion. This is harmless (the form is pre-filled, and they can skip).
+- **Seed before migration:** running `seed:staging` against a staging DB without the column fails. CI already waits for `Migrate staging`; the risk is local runs only.
+- **RLS:** no new policies. `profiles_update_own` already lets owners write any profile column, so a user can set or clear their own marker or `avatar_url`. Setting their own marker only skips their own wizard. Arbitrary `avatar_url` writes via the REST API are pre-existing and not widened by this design; the wizard itself only nulls the field. `onboarded_at` is readable by all signed-in users, which is low-sensitivity and on a par with the already-exposed `created_at`/`updated_at`.
+- **Gate loops:** the gate fails open on a null profile or a read error. `/welcome` itself redirects onboarded users away. `/api/*` is never gated, so the wizard's import and auth callback work. Server-action POSTs are not gated.
+- **Aborted E2E runs** can leave `e2e_player`'s marker null, which would gate the other authed specs. `afterAll` restores it, and CI re-seeds (which sets the marker) before every run.
+- **Large collections:** the wizard's existence probe is `limit 1` on an indexed column. The import route adds only one PK update. There's no new per-card work.
+- **Behaviour change on `/profile`:** display names longer than 50 characters are now rejected on save (decision 8). Existing long names are untouched until edited.
+- **Import marker coupling:** marking on any successful import also covers modal imports. Those users are already onboarded, so it's a 0-row no-op.

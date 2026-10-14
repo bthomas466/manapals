@@ -249,3 +249,47 @@ export async function cardPrices(ref: CardRef): Promise<{ price_usd: number | nu
   const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   return { price_usd: n(data.price_usd), price_usd_foil: n(data.price_usd_foil) };
 }
+
+// --- profile helpers (onboarding wizard, #34) ---
+
+export type ProfileSnapshot = {
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  onboarded_at: string | null;
+  collection_visibility: "friends" | "public";
+};
+
+const PROFILE_FIELDS = "username, display_name, avatar_url, onboarded_at, collection_visibility";
+
+/** e2e_player's profile row. */
+export async function readProfile(): Promise<ProfileSnapshot> {
+  const { client, userId } = await e2eSession();
+  const { data, error } = await client
+    .from("profiles")
+    .select(PROFILE_FIELDS)
+    .eq("user_id", userId)
+    .single<ProfileSnapshot>();
+  if (error || !data) throw new Error(`readProfile failed: ${error?.message}`);
+  return data;
+}
+
+export const snapshotProfile = readProfile;
+
+/** Updates e2e_player's own profile row; throws unless exactly one row changed. */
+export async function updateProfileRow(patch: Partial<ProfileSnapshot>) {
+  const { client, userId } = await e2eSession();
+  const { data, error } = await client.from("profiles").update(patch).eq("user_id", userId).select("user_id");
+  if (error || data?.length !== 1) {
+    throw new Error(`updateProfileRow failed: ${error?.message ?? `${data?.length} rows updated`}`);
+  }
+}
+
+export async function restoreProfile(snapshot: ProfileSnapshot) {
+  await updateProfileRow(snapshot);
+}
+
+/** Sets (ISO string) or clears (null) e2e_player's onboarding marker. */
+export async function setOnboardedAt(value: string | null) {
+  await updateProfileRow({ onboarded_at: value });
+}

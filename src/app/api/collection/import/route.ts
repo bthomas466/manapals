@@ -130,6 +130,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Best-effort: a successful import finishes onboarding (no-op once onboarded).
+  const { error: markError } = await supabase
+    .from("profiles")
+    .update({ onboarded_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("onboarded_at", null);
+  if (markError) console.error("Failed to mark onboarding complete:", markError.message);
+
   return NextResponse.json({
     imported: resolvedRows.length,
     unmatched,

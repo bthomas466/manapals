@@ -7,9 +7,10 @@ export type Profile = {
   display_name: string;
   avatar_url: string | null;
   collection_visibility: "friends" | "public";
+  onboarded_at: string | null;
 };
 
-const PROFILE_COLUMNS = "user_id, username, display_name, avatar_url, collection_visibility";
+const PROFILE_COLUMNS = "user_id, username, display_name, avatar_url, collection_visibility, onboarded_at";
 
 /**
  * Returns the user's profile, lazily provisioning one for accounts that
@@ -40,7 +41,14 @@ export async function ensureProfile(
       attempt === 0 ? base : `${base.slice(0, 15)}_${Math.floor(Math.random() * 10 ** attempt)}`;
     const { data, error } = await admin
       .from("profiles")
-      .insert({ user_id: user.id, username: candidate, display_name: displayName, avatar_url: avatarUrl })
+      .insert({
+        user_id: user.id,
+        username: candidate,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        // Accounts that predate the signup trigger are existing users, not new ones.
+        onboarded_at: new Date().toISOString(),
+      })
       .select(PROFILE_COLUMNS)
       .single();
     if (!error) return data as Profile;

@@ -1,49 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
-import { parseManaboxCsv, type NormalizedRow } from "@/lib/csv/manabox";
-
-type Step =
-  | { kind: "pick" }
-  | { kind: "error"; messages: string[] }
-  | { kind: "confirm"; rows: NormalizedRow[] }
-  | { kind: "importing" }
-  | { kind: "done"; imported: number; unmatched: { name: string; setCode: string }[] };
+import ManaboxInstructions from "@/components/onboarding/ManaboxInstructions";
+import { useCollectionImport } from "./useCollectionImport";
 
 export default function ImportCollectionModal({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState<Step>({ kind: "pick" });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  async function handleFileSelected(file: File) {
-    const { rows, errors } = await parseManaboxCsv(file);
-    if (rows.length === 0) {
-      setStep({ kind: "error", messages: errors.length > 0 ? errors : ["No usable rows found in this file."] });
-      return;
-    }
-    setStep({ kind: "confirm", rows });
-  }
-
-  async function handleConfirmImport(rows: NormalizedRow[]) {
-    setStep({ kind: "importing" });
-    try {
-      const response = await fetch("/api/collection/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setStep({ kind: "error", messages: [data.error ?? "Import failed."] });
-        return;
-      }
-      setStep({ kind: "done", imported: data.imported, unmatched: data.unmatched ?? [] });
-      router.refresh();
-    } catch {
-      setStep({ kind: "error", messages: ["Couldn't reach the server. Check your connection and try again."] });
-    }
-  }
+  const { step, chooseFile, confirm, reset } = useCollectionImport({ onSuccess: () => router.refresh() });
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60">
@@ -64,6 +29,14 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             <p className="text-sm text-text-secondary">
               Export your collection from Manabox as a CSV, then upload it here.
             </p>
+            <details className="rounded-[--radius-chip] border border-border bg-elevated p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-text-primary">
+                How to export from Manabox
+              </summary>
+              <div className="pt-3">
+                <ManaboxInstructions />
+              </div>
+            </details>
             <input
               ref={fileInputRef}
               type="file"
@@ -71,7 +44,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleFileSelected(file);
+                if (file) chooseFile(file);
               }}
             />
             <button
@@ -93,7 +66,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
               ))}
             </div>
             <button
-              onClick={() => setStep({ kind: "pick" })}
+              onClick={() => reset()}
               className="w-full rounded-[--radius-btn] border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
             >
               Try another file
@@ -110,7 +83,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
               — this can&apos;t be undone.
             </p>
             <button
-              onClick={() => handleConfirmImport(step.rows)}
+              onClick={() => confirm(step.rows)}
               className="w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Replace collection
