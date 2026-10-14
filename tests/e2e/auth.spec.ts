@@ -17,6 +17,15 @@ test.describe("signed out", () => {
   test("sign-in page visual", async ({ page }) => {
     await page.goto("/sign-in");
     await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-    await expect(page).toHaveScreenshot("sign-in.png", { fullPage: true });
+    const logo = page.getByRole("img", { name: "ManaPals logo" });
+    await expect(logo).toBeVisible();
+    await expect(logo).toHaveAttribute("src", /concept-3\.svg/);
+    await expect
+      .poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBeGreaterThan(0);
+    await expect(page).toHaveScreenshot("sign-in.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.002,
+    });
   });
 });
