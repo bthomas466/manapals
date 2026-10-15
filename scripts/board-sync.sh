@@ -54,10 +54,27 @@ for url in "${urls[@]}"; do
   content_id=$(gql -f url="$url" -f query='
     query($url: URI!) { resource(url: $url) { ... on Issue { id } ... on PullRequest { id } } }' \
     --jq '.data.resource.id')
-  # addProjectV2ItemById is idempotent: it returns the existing item if present.
-  item_id=$(gql -f p="$project_id" -f c="$content_id" -f query='
+  # addProjectV2ItemById returns the existing item if present, but two
+  # concurrent adds (issues/opened + issues/labeled at creation) can race and
+  # the loser fails with "Content already exists in this project". Then the
+  # item is there, so look it up instead.
+  err=$(mktemp)
+  if ! item_id=$(gql -f p="$project_id" -f c="$content_id" -f query='
     mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } } }' \
-    --jq '.data.addProjectV2ItemById.item.id')
+    --jq '.data.addProjectV2ItemById.item.id' 2>"$err"); then
+    if ! grep -q "already exists" "$err"; then
+      cat "$err" >&2; rm -f "$err"; exit 1
+    fi
+    item_id=$(gql -f url="$url" -f query='
+      query($url: URI!) { resource(url: $url) {
+        ... on Issue { projectItems(first: 20) { nodes { id project { id } } } }
+        ... on PullRequest { projectItems(first: 20) { nodes { id project { id } } } } } }' |
+      jq -r --arg p "$project_id" '.data.resource.projectItems.nodes[] | select(.project.id == $p) | .id')
+    if [[ -z "$item_id" ]]; then
+      echo "Item for $url already exists but couldn't be found on the board" >&2; exit 1
+    fi
+  fi
+  rm -f "$err"
   gql -f p="$project_id" -f i="$item_id" -f f="$field_id" -f o="$option_id" -f query='
     mutation($p: ID!, $i: ID!, $f: ID!, $o: String!) {
       updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f,
