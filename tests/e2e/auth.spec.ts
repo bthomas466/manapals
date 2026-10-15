@@ -23,9 +23,15 @@ test.describe("signed out", () => {
     await expect
       .poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth))
       .toBeGreaterThan(0);
+    // Vercel preview deployments inject a feedback toolbar; hide it so it can't
+    // end up in the baseline. A no-op when absent (local runs, prod).
+    await page.addStyleTag({
+      content: "vercel-live-feedback { display: none !important; }",
+    });
     await expect(page).toHaveScreenshot("sign-in.png", {
       fullPage: true,
       maxDiffPixelRatio: 0.002,
+      mask: [page.locator("vercel-live-feedback")],
     });
   });
 });
