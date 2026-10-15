@@ -1,5 +1,5 @@
-name: Feature (AI factory)
-description: An idea for the factory to spec, design, build, and ship to a preview
+name: Feature (AI factory, maintainer only)
+description: "Maintainer only: an idea for the factory to spec, design, build, and ship to a preview"
 title: "[Feature] "
 labels: [factory]
 body:

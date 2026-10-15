@@ -1,6 +1,10 @@
+<img src="public/brand/concept-3.svg" alt="ManaPals logo" width="96" height="96" align="right">
+
 # ManaPals
 
-A mobile-optimized web app that turns your [Manabox](https://manabox.app) Magic: The Gathering collection into a social profile — add friends, browse each other's cards, and spot trade opportunities without screenshots or manual list comparisons.
+Your Magic: The Gathering collection, shared with your playgroup. Add friends, browse each other's cards, and spot trades without screenshots or manual list comparisons.
+
+**[Try it at manapals.vercel.app](https://manapals.vercel.app)**
 
 > [!NOTE]
 > ManaPals is not affiliated with Manabox or SkillDevs SC. It reads a CSV you export yourself; it does not access Manabox's servers.
@@ -13,21 +17,37 @@ See [`docs/manabox-companion-prd.md`](docs/manabox-companion-prd.md) for the ful
 
 ## Features
 
-**Available today**
+### Available today
 
-- Google sign-in via Supabase Auth (Apple sign-in pending — button removed until it's wired up)
-- Manabox CSV import, enriched with live card data (images, rarity, colors, prices) from Scryfall
-- Collection browsing with search, color/foil filters, and sort by name, set, rarity, or price
-- Friend requests (send, accept, decline, remove) and friends-only profile visibility
-- Public profile pages at `/u/[username]`, with collections gated to accepted friends
+- Sign in with Google
+- Guided onboarding for new users: import your collection and set up your profile step by step
+- Import your Manabox CSV, enriched with card data (images, rarity, colors, prices) from Scryfall
+- Browse your collection with search, color/foil filters, and sort by name, set, rarity, or price, including collections of more than 1,000 cards
+- A collection summary with total cards and estimated value
+- Mark cards and whole binders as available to trade
+- A wishlist of the cards you want
+- Trade Match with a friend: see what you have that they want, and vice versa
+- Friend requests (send, accept, decline, remove)
+- Collections are friends-only by default, with an opt-in public setting
+- Profile pages at `/u/<username>`
+- A layout that works on phones, tablets, and desktops
 
-**Coming soon**
+### Not yet
 
-- Trade Match view — see what you have that a friend wants, and vice versa
-- Wishlist, so trade matching has something to match against
-- Email/in-app notifications for friend requests and wishlist hits
-- Opt-in public collection visibility and Open Graph link previews
-- Public discovery, alternate CSV formats, collection analytics
+- Apple sign-in
+- Email or in-app notifications (for example, for friend requests)
+- Link previews when you share a profile (Open Graph)
+- A "last synced" display on profiles
+- Shareable links to individual cards
+- Public discovery, other CSV formats, and collection analytics
+
+## Suggest an idea or report a problem
+
+1. **Suggest it.** [Open a suggestion](https://github.com/bthomas466/manapals/issues/new?template=1-suggestion.yml) and tell us what you'd like, or what isn't working.
+2. **It gets reviewed.** The maintainer ([@bthomas466](https://github.com/bthomas466)) reads every suggestion.
+3. **It may get built.** If it's a good fit, it may get built, and the issue is updated along the way.
+
+Not every suggestion will be built, and there's no promised timeline. Issues are public, so please don't include your email address or other contact details.
 
 ## Getting started
 
@@ -83,9 +103,12 @@ Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to 
 ### Other scripts
 
 ```bash
-npm run build   # production build
-npm run start   # run the production build
-npm run lint    # eslint
+npm run build       # production build
+npm run start       # run the production build
+npm run lint        # eslint
+npm run typecheck   # TypeScript check
+npm test            # unit tests
+npm run test:e2e    # end-to-end tests (Playwright)
 ```
 
 ## Tech stack
