@@ -1,5 +1,5 @@
 # Update the README: what ManaPals is, what it does, and how to suggest ideas
-Issue: #40 · PRD refs: §1.1–1.2 (problem and vision), §2 (target users), §6 and §8 (out of scope and roadmap, for the "not yet" list) · Status: Draft
+Issue: #40 · PRD refs: §1.1–1.2 (problem and vision), §2 (target users), §6 and §8 (out of scope and roadmap, for the "not yet" list) · Status: Approved
 
 ## Problem
 The repo is public. For visitors and playgroup friends, the README is usually the first thing they see about ManaPals, and right now it is wrong and incomplete:
@@ -230,3 +230,134 @@ A static approximation of GitHub's light theme at 390px. It is not app UI, so Ma
 4. **Issue form, dropdown open and required-field error.** Options are Idea and Something's broken. The error is GitHub's own validation. AC-10.
 
 Decisions: the logo uses the dark tile `concept-3.svg` (Q1 default). The form has no labels. The README link text says "Open a suggestion" and never mentions `factory`.
+
+## Decisions (spec gate, 2026-10-15)
+Owner replied `approve` with no changes. All recommended defaults for Q1–Q9 are accepted.
+
+## Technical design
+
+Docs and issue-template change only. No app code, routes, server actions, caching or Supabase access, so the Next.js 16 routing/data guides don't apply. No migration.
+
+### Changes
+| File | Change |
+|---|---|
+| `README.md` | Rewrite everything above `## Getting started` (logo, pitch, live link, features with `### Available today` / `### Not yet`, new Suggest section). In Getting started, only add `typecheck`, `test`, `test:e2e` to "Other scripts". Tech stack unchanged. |
+| `.github/ISSUE_TEMPLATE/1-suggestion.yml` (new) | Public issue form "Suggest an idea or report a problem". No `labels` key. |
+| `.github/ISSUE_TEMPLATE/feature.yml` | Change only `name` and `description` to say "maintainer only". `title`, `labels: [factory]` and the `idea`/`why`/`notes` fields stay byte-identical. |
+| `tests/unit/readme.test.ts` (new) | Vitest checks for AC-1 to AC-16. It reads files from disk. |
+| `package.json` / `package-lock.json` | Add the devDependency `yaml` (`^2`, ships its own TS types) so the test can parse the templates. |
+
+Not changed: `config.yml`, `board.yml`, `factory.yml`, `.claude/skills/feature/SKILL.md`. The `/feature` skill passes `--label factory` itself and doesn't use the template name, so renaming `feature.yml` doesn't affect it.
+
+**Filename choice.** Use `1-suggestion.yml`. It sorts before `feature.yml` by filename (UX note), so the README link is `https://github.com/bthomas466/manapals/issues/new?template=1-suggestion.yml`.
+
+**Why add `yaml`.** `js-yaml` is in `node_modules` today only as a transitive dependency of `@eslint/eslintrc`. Importing it directly would break silently if eslint drops it, and it would also need `@types/js-yaml`. `yaml` is one direct devDependency with types included.
+
+### README structure (exact headings the tests rely on)
+```
+<img src="public/brand/concept-3.svg" alt="ManaPals logo" width="96" height="96" align="right">
+
+# ManaPals
+<one-line pitch>
+**[Try it at manapals.vercel.app](https://manapals.vercel.app)**
+
+> [!NOTE]
+> ManaPals is not affiliated with Manabox or SkillDevs SC. It reads a CSV ...   (kept word for word)
+
+## What it is            (current paragraph + PRD link, light edits only)
+## Features
+### Available today
+### Not yet
+## Suggest an idea or report a problem
+1. Suggest: [Open a suggestion](https://github.com/bthomas466/manapals/issues/new?template=1-suggestion.yml) ...
+2. The maintainer ([@bthomas466](https://github.com/bthomas466)) reviews it ...
+3. If it's a good fit, it may get built, and the issue is updated ...
+(Not every suggestion will be built; there's no promised timeline. Issues are public, so don't include an email address or other contact details.)
+## Getting started        (unchanged apart from Other scripts)
+## Tech stack             (unchanged)
+```
+Wording constraints that follow from the ACs (the builder must respect them):
+- **Use `###` subheadings for "Available today" / "Not yet"** instead of the current bold lines, so the test can split sections on headings.
+- **`### Not yet` must not contain "trade match", "wishlist" or "public collection visibility" anywhere (AC-5), including inside other items.** The current notifications line ("...friend requests and wishlist hits") would fail. Write it as, for example, "Email or in-app notifications (for example, for friend requests)". For "public discovery", don't write "public collection visibility".
+- **The top section (before `## Getting started`) must not contain the substring `factory`, case-insensitive (AC-9).** Don't add a "via the AI factory" aside.
+- **Privacy wording:** say "friends-only by default, with an opt-in public setting". Never suggest collections are public by default. The "Available today" list must include the word "public" (AC-4).
+- **AC-4 terms in "Available today":** "Trade Match", "Wishlist", "onboarding" (for example, "guided onboarding for new users"), "available to trade", "estimated value", "public", "friend".
+- **Above Getting started:** don't mention RLS or Supabase internals. The "Google sign-in via Supabase Auth" line becomes "Sign in with Google".
+- **Verify each "Not yet" item against `src/` first.** Checked during design: no Apple provider, no notifications, no `opengraph-image`/OG metadata, no "last synced" display and no share links exist in `src/`.
+- **Relative links in the README must resolve (AC-14):** `public/brand/concept-3.svg`, `docs/manabox-companion-prd.md`, `supabase/migrations`. `<your-app-url>/api/auth/callback` sits inside backticks and isn't a link.
+
+### `1-suggestion.yml` shape
+```yaml
+name: Suggest an idea or report a problem
+description: Share an idea for ManaPals or tell us something isn't working
+title: "[Suggestion] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve ManaPals. The maintainer reviews every suggestion before anything is built, and not every idea will be. Issues are public, so please don't include your email address or other contact details.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Idea
+        - Something's broken
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why / what happened?
+```
+`feature.yml` gets `name: Feature (AI factory, maintainer only)` and a description such as "Maintainer only: an idea for the factory to spec, design, build, and ship to a preview".
+
+### Data flow
+None. These are static files rendered by GitHub. New issues from the form arrive unlabeled. `board.yml` (`issues/opened`, the `*)` branch) syncs them to **Intake**. `factory.yml` only starts when `sender == repository_owner` adds the `factory` label.
+
+### Logic placement
+There's no application logic. Small parsing helpers (`topSection`, `sectionUnder(heading)`, `links(md)`, `images(md)`) live inside `tests/unit/readme.test.ts`, because they're test fixtures, not app logic. Nothing goes in `src/lib/**`.
+
+### Test plan
+Everything is in `tests/unit/readme.test.ts`. It follows `tests/unit/brand-assets.test.ts`: `root = resolve(__dirname, "../..")`, `readFileSync`, `existsSync`, plus `parse` from `yaml`. No E2E: there's no app UI, and the GitHub chooser/form can't be driven by Playwright against the app. No seed data changes.
+
+| AC | Assertion |
+|---|---|
+| AC-1 | Top section (text before `\n## Getting started`) matches `\]\(https://manapals\.vercel\.app/?\)` or `href="https://manapals\.vercel\.app/?"`. |
+| AC-2 | Collect `!\[[^\]]*\]\(([^)\s]+)` and `<img[^>]*\ssrc="([^"]+)"` from the first 10 lines. At least one starts with `public/brand/` (optionally `./`) and `existsSync` is true. |
+| AC-3 | Contains the exact sentence. Has the headings `## What it is`, `## Features`, `## Getting started`, `## Tech stack` (line-anchored regex). Index of What it is < Features < Getting started. |
+| AC-4 | `Available today` section = from the `### Available today` heading to the next heading matching `/^#{2,3} .*(not yet\|coming soon)/im` (or the next `##`). Lowercased, it includes every term. Where the AC gives two alternatives, accept either. |
+| AC-5 | Not-yet section = from that heading to the next heading of any level. Lowercased, it includes none of the three phrases. Also assert the section exists and isn't empty, so the test can't pass on an empty match. |
+| AC-6 | `README` doesn't include the old phrase. |
+| AC-7 | Find the `## ` heading that contains "Suggest". Its index < Getting started. In the lowercased body after the heading line: `i = indexOf("suggest")`, `j = indexOf("review", i)`, `k = indexOf("built", j)`, all `>= 0`. |
+| AC-8 | In the suggest section, match `https://github\.com/bthomas466/manapals/issues/new\?template=([\w.-]+)`. `<file>` ≠ `feature.yml` and exists in `.github/ISSUE_TEMPLATE/`. Export the filename to AC-10/11 instead of hard-coding it. |
+| AC-9 | The whole README doesn't include `template=feature.yml`. The lowercased top section doesn't include `factory`. |
+| AC-10 | Parse the AC-8 file. `name`, `description` are non-empty strings and `body` is a non-empty array. `labels` is undefined or (normalized to an array) doesn't include `factory`. There's a `textarea` with `validations.required === true`. There's a `dropdown` whose `attributes.options` include one matching `/idea/i` and one matching `/broken\|bug/i`. |
+| AC-11 | Some `markdown` element's `attributes.value` matches `/review/i`. |
+| AC-12 | Parse `feature.yml`. `labels` deep-equals `["factory"]`. `body.map(b => b.id).filter(Boolean)` equals `["idea","why","notes"]`. `name + description` matches `/maintainer/i`. |
+| AC-13 | For `readdirSync` `*.yml`/`*.yaml` excluding `config.yml`, filter those whose `labels` (string, comma-list or array) include `factory`. The result equals `["feature.yml"]`. |
+| AC-14 | Collect markdown link/image targets `\]\(([^)\s]+)` plus `src="…"` and `href="…"`. Drop those starting with `http`, `#`, `mailto:`. Strip `#…`/`?…` and a leading `./`. Each `existsSync(join(root, target))` is true. Skip fenced code blocks (strip ```…``` before scanning). |
+| AC-15 | Doesn't include either project ref. `/SERVICE_ROLE_KEY=[^\s`]/` doesn't match, so the bare placeholder line passes. |
+| AC-16 | For each `/npm run ([\w:.-]+)/g`, the name is in `package.json` `scripts`. Assert at least one match, so it isn't vacuous. |
+
+The builder also runs `npm run lint` and `npm run typecheck`. The test file is TypeScript and is under the tsconfig.
+
+**Manual check (after merge; the GitHub chooser reflects the default branch only):**
+- The chooser lists the suggestion first.
+- The form shows the intro, dropdown and required field.
+- A submitted issue has no labels and lands in Intake.
+
+### Risks
+- **Outsiders can still pick `feature.yml` (accepted, Q4).** GitHub can't hide templates. Picking it attaches `factory` at creation, but `factory.yml` ignores non-owner senders, so the only effect is the issue showing up in **Spec** on the board. If the owner later re-adds `factory`, a run would use untrusted text, so the owner must check the author first. The rename only reduces the chance someone picks it by mistake.
+- **Template order isn't guaranteed.** The `1-` prefix relies on GitHub ordering by filename. If GitHub orders by `name` instead, "Feature…" (F) sorts before "Suggest…" (S). This is cosmetic only; the README deep-links the right template either way. Verify after merge.
+- **Template names in URLs and on the board.** Renaming `feature.yml`'s `name` has no effect on automation: nothing matches on it (checked `.github/`, `.claude/`, `scripts/`). The filename `feature.yml` is unchanged.
+- **Privacy.** The README must not say collections are public by default (PRD §5.3). It must not leak the project refs or keys (AC-15). The form tells people not to post contact details. Issues are public.
+- **The README goes stale again.** The test pins the current feature set (AC-4/5). Later features that ship without a README update won't fail it. That's acceptable, but future specs touching features should update the README.
+- **New devDependency.** `yaml` changes `package-lock.json`. It's dev-only and has no runtime or bundle impact.
+- **Migration safety / RLS / performance:** not applicable. There are no schema or app changes.

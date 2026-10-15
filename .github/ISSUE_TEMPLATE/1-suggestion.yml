@@ -1,0 +1,27 @@
+name: Suggest an idea or report a problem
+description: Share an idea for ManaPals or tell us something isn't working
+title: "[Suggestion] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve ManaPals. The maintainer reviews every suggestion before anything is built, and not every idea will be. Issues are public, so please don't include your email address or other contact details.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Idea
+        - Something's broken
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why / what happened?
