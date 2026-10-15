@@ -1,0 +1,98 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+*{box-sizing:border-box}body{margin:0;width:390px;background:#f6f8fa;font:14px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#1f2328}
+.cap{margin:0;padding:8px 16px;background:#24292f;color:#fff;font:600 11px/1.3 ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase}
+.cap small{display:block;color:#9ca3af;font-weight:400;text-transform:none;letter-spacing:0}
+.box{background:#fff;border:1px solid #d0d7de;border-radius:6px;margin:12px;padding:16px}
+.rh{font:600 12px ui-monospace,monospace;color:#57606a;padding:0 0 10px;border-bottom:1px solid #d0d7de;margin:-4px 0 14px}
+h1{font-size:26px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid #d8dee4}
+h2{font-size:19px;margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid #d8dee4}
+h3{font-size:15px;margin:14px 0 4px}
+p{margin:0 0 10px}ul,ol{margin:0 0 10px;padding-left:22px}li{margin:3px 0}
+a{color:#0969da;text-decoration:none}code{background:#eff1f3;padding:1px 5px;border-radius:5px;font-size:12px}
+.hero{display:flex;align-items:center;gap:14px;margin-bottom:6px}.hero h1{border:0;margin:0;padding:0;font-size:30px}
+.pitch{font-size:16px}
+.note{color:#57606a;font-style:italic}
+pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;margin:0 0 10px}
+.fold{color:#57606a;text-align:center;font-size:12px;padding:6px;border-top:1px dashed #d0d7de;margin-top:14px}
+/* issue form */
+.form label,.form .lbl{display:block;font-weight:600;margin:14px 0 4px}.req{color:#cf222e}
+.form .hint{font-weight:400;color:#57606a;font-size:12px;display:block}
+.in{border:1px solid #d0d7de;border-radius:6px;background:#f6f8fa;padding:8px 12px;min-height:44px;color:#6e7781}
+.ta{min-height:88px}
+.sel{display:flex;justify-content:space-between;align-items:center}
+.callout{background:#ddf4ff;border:1px solid #54aeff66;border-radius:6px;padding:10px 12px;margin-bottom:6px}
+.btn{display:block;text-align:center;background:#1f883d;color:#fff;font-weight:600;border-radius:6px;padding:11px;min-height:44px;margin-top:16px}
+.tpl{border:1px solid #d0d7de;border-radius:6px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;min-height:56px}
+.tpl b{display:block}.tpl span{color:#57606a;font-size:12px}
+.get{border:1px solid #d0d7de;border-radius:6px;padding:6px 12px;font-weight:600;font-size:12px;min-height:32px;display:flex;align-items:center;background:#f6f8fa}
+.badge{font-size:10px;border:1px solid #d0d7de;border-radius:2em;padding:0 6px;color:#57606a;margin-left:4px}
+.err{color:#cf222e;font-size:12px;margin-top:3px}
+</style></head><body>
+
+<p class="cap">1 · README on GitHub (top, phone, light theme)<small>AC-1, AC-2, AC-3, AC-9 · logo, pitch, live link, not-affiliated note</small></p>
+<div class="box">
+<div class="rh">README.md</div>
+<div class="hero">
+<svg width="96" height="96" viewBox="0 0 64 64"><rect x="1" y="1" width="62" height="62" rx="15" fill="#0c1015" stroke="#252930" stroke-width="2"/><path d="M15 47V19L32 37L49 19V47" fill="none" stroke="#f3f2ee" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 27.5L40 37L32 46.5L24 37Z" fill="#e3ad4b" stroke="#0c1015" stroke-width="2.5" stroke-linejoin="round"/></svg>
+<h1>ManaPals</h1></div>
+<p class="pitch"><b>Your Magic collection, shared with your playgroup.</b> Import your cards, see your friends' binders, and find trades both of you will like.</p>
+<p><a href="#">&#9654; Try it: manapals.vercel.app</a></p>
+<p class="note">ManaPals is not affiliated with Manabox or SkillDevs SC.</p>
+<h2>What it is</h2>
+<p>ManaPals is a companion app for Magic: The Gathering players. Import your Manabox export, then share your collection with friends and see what you could trade.</p>
+<h2>Features</h2>
+<h3>Available today</h3>
+<ul>
+<li>Sign in with Google</li>
+<li>Import your Manabox CSV, with card data from Scryfall</li>
+<li>Guided setup for new users</li>
+<li>Browse your collection: search, filter, sort (1,000+ cards fine)</li>
+<li>Collection summary: total cards and estimated value</li>
+<li>Mark cards and binders as available to trade</li>
+<li>Wishlist of cards you want</li>
+<li>Trade Match with a friend</li>
+<li>Friend requests and profile pages at <code>/u/username</code></li>
+<li>Friends-only collections by default; opt in to public</li>
+<li>Works on phones, tablets and desktops</li>
+</ul>
+<h3>Not yet</h3>
+<ul><li>Apple sign-in</li><li>Notifications</li><li>Link previews</li><li>"Last synced" on profiles</li><li>Shareable card links</li><li>Public discovery, other CSV formats, analytics</li></ul>
+<h2>Suggest an idea or report a problem</h2>
+<ol>
+<li><a href="#">Open a suggestion</a> (free GitHub account needed).</li>
+<li>The maintainer (<a href="#">@bthomas466</a>) reviews it.</li>
+<li>If it's a good fit, it may get built, and the issue is updated.</li>
+</ol>
+<p class="note">Not every suggestion will be built, and there is no promised timeline.</p>
+<div class="fold">&#8942; Getting started and Tech stack continue below, unchanged &#8942;</div>
+</div>
+
+<p class="cap">2 · Template chooser (after tapping the link)<small>AC-8, AC-12, AC-13 · new template sorts first; feature.yml renamed maintainer only</small></p>
+<div class="box">
+<div class="tpl"><div><b>Suggest an idea or report a problem</b><span>Tell the maintainer what you'd like, or what broke.</span></div><div class="get">Get started</div></div>
+<div class="tpl"><div><b>Feature (AI factory, maintainer only)</b><span>Maintainer intake. Not for suggestions.</span></div><div class="get">Get started</div></div>
+</div>
+
+<p class="cap">3 · Issue form: default<small>AC-10, AC-11 · no labels applied; title prefix [Suggestion]</small></p>
+<div class="box form">
+<div class="callout">Thanks for helping! The maintainer <b>reviews</b> every suggestion before anything is built. This issue is public, so please don't include emails or other personal details.</div>
+<label>Title</label><div class="in">[Suggestion] </div>
+<span class="lbl">Kind <span class="req">*</span></span>
+<div class="in sel"><span style="color:#1f2328">Idea</span><span>&#9662;</span></div>
+<label>What would you like? <span class="req">*</span></label><div class="in ta">e.g. Show when a friend last synced their collection</div>
+<label>Why / what happened? <span class="hint">Optional</span></label><div class="in ta">e.g. I can't tell if their list is up to date</div>
+<div class="btn">Submit new issue</div>
+</div>
+
+<p class="cap">4 · Issue form: dropdown open and required-field error<small>AC-10 · Kind options; GitHub's own validation</small></p>
+<div class="box form">
+<span class="lbl" style="margin-top:0">Kind <span class="req">*</span></span>
+<div class="in sel"><span style="color:#1f2328">Something's broken</span><span>&#9662;</span></div>
+<div style="border:1px solid #d0d7de;border-radius:6px;margin-top:4px;box-shadow:0 4px 12px #0002">
+<div style="padding:11px 12px;min-height:44px">Idea</div><div style="padding:11px 12px;min-height:44px;background:#ddf4ff">&#10003; Something's broken</div></div>
+<label>What would you like? <span class="req">*</span></label><div class="in ta" style="border-color:#cf222e"></div>
+<div class="err">What would you like? cannot be blank</div>
+<div class="btn" style="background:#94d3a2">Submit new issue</div>
+</div>
+</body></html>
