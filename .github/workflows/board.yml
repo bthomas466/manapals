@@ -32,7 +32,8 @@ jobs:
     # No concurrency group: GitHub keeps only one *waiting* run per group, so
     # bursts (an issue created with labels) could drop updates. Events for
     # one item are minutes apart, except opened+labeled at creation, which
-    # both resolve from the issue's current labels (see issues/opened).
+    # both resolve from the issue's current labels (see issues/opened);
+    # board-sync.sh tolerates their racing adds.
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
