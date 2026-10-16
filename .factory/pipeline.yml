@@ -32,8 +32,9 @@ stages:
     gate: owner
     summary: >-
       Always in the cloud: the spec and mockup are posted on the issue and the
-      run pauses until the owner replies "approve" or asks for changes.
-      Locally only with --review-spec.
+      run pauses until the owner replies "approve", asks for changes, or
+      replies "split" (big features become slice issues via /split-feature).
+      Locally with --review-spec, or when the spec proposes slices.
 
   - id: 4
     name: Technical design
@@ -75,6 +76,12 @@ stages:
   - id: 11
     name: Report
     summary: PR, preview, test coverage, review verdict and open questions.
+
+  - id: 12
+    name: Retro
+    summary: >-
+      Up to 3 environment fixes from this run's friction (checks, coding
+      standards, agent instructions), included in the report.
 
 # After the factory: always the owner.
 release:

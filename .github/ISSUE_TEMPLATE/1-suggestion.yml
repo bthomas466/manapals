@@ -1,6 +1,7 @@
 name: Suggest an idea or report a problem
 description: Share an idea for ManaPals or tell us something isn't working
 title: "[Suggestion] "
+labels: [needs-triage]
 body:
   - type: markdown
     attributes:

@@ -83,9 +83,15 @@ jobs:
                 *) echo "Label '$LABEL' doesn't move the board." ;;
               esac ;;
             issues/unlabeled)
-              # The gate label comes off when the owner approves and the build starts.
+              # The gate label comes off when the owner approves and the build
+              # starts, or after /split-feature (which removes `factory` first):
+              # the parent goes back to Intake and its slices take over.
               if [ "$LABEL" = factory-awaiting-approval ] && [ "$ISSUE_STATE" = open ]; then
-                sync Building "$ISSUE_URL"
+                labels=$(gh issue view "$ISSUE_URL" --json labels --jq '[.labels[].name] | join(",")')
+                case ",$labels," in
+                  *,factory,*) sync Building "$ISSUE_URL" ;;
+                  *)           sync Intake "$ISSUE_URL" ;;
+                esac
               else
                 echo "Unlabel '$LABEL' doesn't move the board."
               fi ;;
