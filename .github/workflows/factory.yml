@@ -106,7 +106,7 @@ jobs:
             Also read `AGENTS.md`.
 
             Event: `${{ github.event_name }}`. Existing factory branch: `${{ steps.branch.outputs.name }}` (empty means none yet).
-            ${{ github.event_name == 'issues' && 'This is a NEW run: do stages 0–2, then the cloud spec gate, then stop.' || 'This is a RESUME: the owner replied on the issue. Their comment is below. Follow the Cloud mode resume rules.' }}
+            ${{ github.event_name == 'issues' && 'This is a NEW run: do stages 0–3, then the cloud spec gate, then stop.' || 'This is a RESUME: the owner replied on the issue. Their comment is below. Follow the Cloud mode resume rules.' }}
 
             ${{ github.event_name == 'issue_comment' && format('Owner comment:\n<owner-comment>\n{0}\n</owner-comment>', github.event.comment.body) || '' }}
 

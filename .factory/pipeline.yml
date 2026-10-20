@@ -28,56 +28,73 @@ stages:
     output: docs/specs/<n>-<slug>/
 
   - id: 3
+    name: Delight
+    agent: whimsy-injector
+    summary: >-
+      Up to 5 small delight items (microcopy, empty/success states, CSS
+      micro-interactions) added to the mockup and the spec's Delight section.
+    output: docs/specs/<n>-<slug>/
+
+  - id: 4
     name: Spec gate
     gate: owner
     summary: >-
-      Always in the cloud: the spec and mockup are posted on the issue and the
-      run pauses until the owner replies "approve", asks for changes, or
-      replies "split" (big features become slice issues via /split-feature).
+      Always in the cloud: the spec, mockup and Delight items are posted on the
+      issue and the run pauses until the owner replies "approve" (optionally
+      dropping Delight items), asks for changes, or replies "split" (big
+      features become slice issues via /split-feature).
       Locally with --review-spec, or when the spec proposes slices.
 
-  - id: 4
+  - id: 5
     name: Technical design
     agent: architect
     summary: Files to change, migrations with RLS, data flow, test plan.
 
-  - id: 5
+  - id: 6
     name: Build
     agent: builder
     summary: Implements the technical design.
 
-  - id: 6
+  - id: 7
+    name: UI polish
+    agent: ui-designer
+    summary: >-
+      Checks the built UI against the mockup and design system (tokens, states,
+      accessibility) and fixes presentational issues itself. Skipped when no UI changed.
+    on_fail: { agent: builder, max_rounds: 1 }
+
+  - id: 8
     name: Tests
     agent: test-writer
     summary: Vitest unit tests and Playwright E2E for the acceptance criteria.
 
-  - id: 7
+  - id: 9
     name: Verify
     summary: Lint, typecheck, unit tests, build, then Playwright.
     on_fail: { agent: builder, max_rounds: 3 }
 
-  - id: 8
+  - id: 10
     name: Review
     agent: reviewer
     summary: Correctness, security, RLS and spec compliance. Fixes are always re-reviewed.
     on_fail: { agent: builder, max_rounds: 1 }
 
-  - id: 9
+  - id: 11
     name: Ship to preview
     agent: release-manager
     summary: Commit, push, open the PR with labels; Vercel builds the preview.
 
-  - id: 10
+  - id: 12
     name: QA
     agent: qa
     summary: Watches CI and E2E on the preview and triages failures.
     on_fail: { agent: builder, max_rounds: 2 }
 
-  - id: 11
+  - id: 13
     name: Report
-    summary: PR, preview, test coverage, review verdict and open questions.
+    summary: PR, preview, test coverage, review verdict, Delight shipped and open questions.
 
-  - id: 12
+  - id: 14
     name: Retro
     summary: >-
       Up to 3 environment fixes from this run's friction (checks, coding
