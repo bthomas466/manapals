@@ -1,5 +1,5 @@
 # Real Profile stats, plus themed not-found, error and loading pages
-Issue: #45 · PRD refs: US-06, US-15, US-16, US-17, §4.4, §4.5, §4.6, §5.2, §5.3 · Status: Draft
+Issue: #45 · PRD refs: US-06, US-15, US-16, US-17, §4.4, §4.5, §4.6, §5.2, §5.3 · Status: Approved
 
 ## Problem
 - **The Profile stats are fake.** The stats row on `/profile` hard-codes `{ label: "Cards", value: "0" }` and `{ label: "Trades", value: "0" }` (`src/app/(main)/profile/page.tsx:83-85`). Only the Friends tile is real. The seeded `e2e_player` owns 5 cards but sees "0 Cards". Wrong numbers on your own profile make the rest of the app look untrustworthy.
@@ -236,3 +236,6 @@ Proposed by whimsy-injector. In scope unless the owner drops them at the spec ga
 | D-5 | Not-found and error cards (AC-9, AC-13) | The card fades in using the same `settle` keyframes as D-3 (`motion-safe:animate-[settle_250ms_ease-out_both]`). Copy unchanged. | Makes a dead end feel calm and intentional instead of broken. | Card appears instantly. |
 
 Left out: any joke or flavor copy on not-found and error pages (serious moments stay plain); pending state on "Try again" (needs client logic beyond copy); a dedicated celebration at a first trade match (would need server-side "new" tracking; possible follow-up).
+
+## Decisions (spec gate, 2026-10-20)
+Owner replied `approve` with no changes. Recommended defaults accepted for all open questions (Q1 trade match = "You have, they want" + "They have, you want"; Q2 `unstable_retry()`; Q3 always show "Nothing was changed"; Q4 `motion-safe:animate-pulse` in `collection/loading.tsx`; Q5 root 404 is a follow-up; Q6 only Cards links; Q7 Vitest render tests only; Q8 no split). All Delight items D-1 to D-5 remain in scope.
