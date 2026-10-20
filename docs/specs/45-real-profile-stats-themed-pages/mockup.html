@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>#45 mockup</title>
+<style>
+:root{--page:oklch(13% .01 260);--surface:oklch(17% .012 260);--elevated:oklch(22% .012 260);--border:oklch(28% .014 260);--amber:oklch(78% .13 80);--tp:oklch(96% .005 90);--ts:oklch(65% .02 260);--tm:oklch(50% .015 260);--card:16px;--btn:12px;--chip:8px}
+*{box-sizing:border-box;margin:0}
+body{width:390px;background:#000;color:var(--tp);font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.cap{padding:14px 16px 8px;font:700 11px/1.3 system-ui;letter-spacing:.06em;text-transform:uppercase;color:#9aa;background:#000}
+.cap b{color:var(--amber)}
+.screen{width:390px;background:var(--page);display:flex;flex-direction:column;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);min-height:48px;display:flex;align-items:center;padding:0 16px;gap:8px;font-weight:800;font-size:18px}
+.hdr i{width:24px;height:24px;border-radius:7px;background:var(--amber);display:inline-block}
+main{flex:1;padding:24px 16px 16px}
+nav{height:64px;background:var(--surface);border-top:1px solid var(--border);display:flex}
+nav div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:600;color:var(--tm)}
+nav div:before{content:"";width:22px;height:22px;border-radius:6px;border:1.75px solid currentColor}
+nav .on{color:var(--amber)}
+.sp>*+*{margin-top:24px}
+.row{display:flex;align-items:center;gap:16px}
+.av{width:64px;height:64px;border-radius:99px;background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
+.name{font-weight:700}.muted{font-size:14px;color:var(--tm)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{border-radius:var(--card);background:var(--elevated);border:1px solid var(--border);padding:12px;text-align:center;display:block;color:inherit;text-decoration:none;position:relative}
+.tile .v{font-size:20px;font-weight:800;line-height:28px}
+.tile .l{font-size:12px;color:var(--tm)}
+.tile.link{min-height:64px;border-color:oklch(34% .03 80);box-shadow:inset 0 0 0 1px oklch(78% .13 80/.12)}
+.tile.link .l:after{content:" ›";color:var(--amber);font-weight:800}
+.tile .v.dash{color:var(--ts)}
+h2{font-size:14px;font-weight:700}.sec p{font-size:14px;color:var(--ts);margin-top:8px}
+.sec{opacity:.9}
+.toggle,.search{margin-top:8px;min-height:44px;border-radius:var(--btn);border:1px solid var(--border);background:var(--elevated);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--tm)}
+.alert{border-radius:var(--card);border:1px solid var(--border);background:var(--elevated);padding:16px;text-align:center}
+.alert>*+*{margin-top:12px}
+.alert .t{font-weight:600}.alert .b{font-size:14px;color:var(--ts)}
+.btn2{min-height:44px;width:100%;border-radius:var(--btn);border:1px solid var(--border);background:var(--elevated);font:600 14px system-ui;color:var(--ts);display:flex;align-items:center;justify-content:center}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding-top:56px;padding-bottom:40px}
+.icon{width:64px;height:64px;border-radius:var(--card);background:var(--elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px}
+.empty .t{font-weight:600}.empty .b{font-size:14px;color:var(--ts);max-width:20rem;margin-top:4px}
+.amber{min-height:44px;display:inline-flex;align-items:center;border-radius:var(--btn);background:var(--amber);color:var(--page);font-weight:700;font-size:14px;padding:0 20px}
+.sk{background:var(--elevated);border-radius:var(--chip)}
+.pulse{animation:p 2s cubic-bezier(.4,0,.6,1) infinite}
+@media(prefers-reduced-motion:reduce){.pulse{animation:none}}
+@keyframes p{50%{opacity:.5}}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid3 div{aspect-ratio:5/7;border:1px solid var(--border)}
+.frow{display:flex;gap:12px;align-items:center;border-radius:var(--card);padding:12px;background:var(--elevated);border:1px solid var(--border);height:66px}
+.dl{display:inline-block;font:700 10px/1 system-ui;color:var(--amber);border:1px solid oklch(34% .03 80);border-radius:99px;padding:3px 6px;margin-left:6px;vertical-align:middle;letter-spacing:.04em}
+.tile .v.hit{color:var(--amber)}
+.tile.link:active{transform:scale(.97)}
+.settle{animation:s .25s ease-out both}
+@keyframes s{from{opacity:0;transform:translateY(6px)}}
+@media(prefers-reduced-motion:reduce){.settle{animation:none}.tile.link:active{transform:none}}
+.hint{font-size:14px;color:var(--ts);text-align:center;margin-top:12px}
+.note{padding:8px 16px 14px;font:12px/1.4 system-ui;color:#889;background:#000}
+</style></head><body>
+
+<div class="cap"><b>1</b> Profile / default (AC-3, AC-4, AC-5) <span class="dl">✨ D-1</span><span class="dl">✨ D-2</span><span class="dl">✨ D-3</span></div>
+<div class="screen"><div class="hdr"><i></i>ManaPals</div><main class="sp">
+ <div class="row"><div class="av">👤</div><div><p class="name">Priya Raman</p><p class="muted">@priya_mtg · Edit</p></div></div>
+ <div class="stats settle">
+  <a class="tile link"><p class="v">212</p><p class="l">Cards</p></a>
+  <div class="tile"><p class="v">3</p><p class="l">Friends</p></div>
+  <div class="tile"><p class="v hit">14</p><p class="l">Trades</p></div>
+ </div>
+ <div class="sec"><h2>Collection visibility</h2><p>Only friends can browse your collection.</p></div>
+ <div class="sec"><h2>Find a Friend</h2><div class="search">Search a username</div></div>
+</main><nav><div>Collection</div><div>Trades</div><div>Wishlist</div><div class="on">Profile</div></nav></div>
+<div class="note">Cards tile is the only link: amber chevron and faint amber border, min 64px tall. Friends and Trades tiles unchanged in layout. <span class="dl">✨ D-1</span> Trades number is amber when above 0. <span class="dl">✨ D-2</span> Cards tile shrinks to 97% on press. <span class="dl">✨ D-3</span> Tiles settle in (250ms fade + 6px rise).</div>
+
+<div class="cap"><b>2</b> Profile stats / variants (AC-6, AC-7, AC-17)</div>
+<div class="screen"><main class="sp" style="padding-bottom:24px">
+ <div><p class="muted" style="margin-bottom:8px">Empty collection, no friends</p>
+ <div class="stats"><a class="tile link"><p class="v">0</p><p class="l">Cards</p></a><div class="tile"><p class="v">0</p><p class="l">Friends</p></div><div class="tile"><p class="v">0</p><p class="l">Trades</p></div></div><p class="hint">Your binder is empty. Tap Cards to add some. <span class="dl">✨ D-4</span></p></div>
+ <div><p class="muted" style="margin-bottom:8px">Large numbers at narrow width (fits tile)</p>
+ <div class="stats"><a class="tile link"><p class="v">1,214</p><p class="l">Cards</p></a><div class="tile"><p class="v">12</p><p class="l">Friends</p></div><div class="tile"><p class="v">1,038</p><p class="l">Trades</p></div></div></div>
+ <div><p class="muted" style="margin-bottom:8px">Reads failed: unknown shows an em dash, never 0</p>
+ <div class="stats"><a class="tile link"><p class="v dash">—</p><p class="l">Cards</p></a><div class="tile"><p class="v">3</p><p class="l">Friends</p></div><div class="tile"><p class="v dash">—</p><p class="l">Trades</p></div></div></div>
+</main></div>
+
+<div class="cap"><b>3</b> Profile / loading skeleton (AC-15)</div>
+<div class="screen"><div class="hdr"><i></i>ManaPals</div>
+<main class="sp pulse" aria-busy="true" aria-label="Loading profile">
+ <div class="row"><div class="sk" style="width:64px;height:64px;border-radius:99px;flex:none"></div><div style="flex:1"><div class="sk" style="height:16px;width:60%"></div><div class="sk" style="height:12px;width:40%;margin-top:10px"></div></div></div>
+ <div class="stats"><div class="sk" style="height:64px;border-radius:16px"></div><div class="sk" style="height:64px;border-radius:16px"></div><div class="sk" style="height:64px;border-radius:16px"></div></div>
+ <div><div class="sk" style="height:14px;width:45%"></div><div class="sk" style="height:44px;margin-top:12px;border-radius:12px"></div></div>
+ <div><div class="sk" style="height:14px;width:35%"></div><div class="sk" style="height:44px;margin-top:12px;border-radius:12px"></div></div>
+</main><nav><div>Collection</div><div>Trades</div><div>Wishlist</div><div class="on">Profile</div></nav></div>
+
+<div class="cap"><b>4</b> Trades / loading skeleton (AC-15)</div>
+<div class="screen"><div class="hdr"><i></i>ManaPals</div>
+<main class="pulse" aria-busy="true" aria-label="Loading trades">
+ <div class="sk" style="height:24px;width:100px"></div><div class="sk" style="height:16px;width:78%;margin-top:10px"></div>
+ <div style="margin-top:16px;display:grid;gap:8px">
+  <div class="frow"><div class="sk" style="width:40px;height:40px;border-radius:99px"></div><div style="flex:1"><div class="sk" style="height:14px;width:50%"></div><div class="sk" style="height:12px;width:30%;margin-top:8px"></div></div><div class="sk" style="width:76px;height:12px"></div></div>
+  <div class="frow"><div class="sk" style="width:40px;height:40px;border-radius:99px"></div><div style="flex:1"><div class="sk" style="height:14px;width:42%"></div><div class="sk" style="height:12px;width:34%;margin-top:8px"></div></div><div class="sk" style="width:76px;height:12px"></div></div>
+  <div class="frow"><div class="sk" style="width:40px;height:40px;border-radius:99px"></div><div style="flex:1"><div class="sk" style="height:14px;width:55%"></div><div class="sk" style="height:12px;width:28%;margin-top:8px"></div></div><div class="sk" style="width:76px;height:12px"></div></div>
+ </div>
+</main><nav><div>Collection</div><div class="on">Trades</div><div>Wishlist</div><div>Profile</div></nav></div>
+
+<div class="cap"><b>5</b> Wishlist / loading skeleton (AC-15)</div>
+<div class="screen"><div class="hdr"><i></i>ManaPals</div>
+<main class="pulse" aria-busy="true" aria-label="Loading wishlist">
+ <div style="display:flex;justify-content:space-between;align-items:center"><div class="sk" style="height:24px;width:110px"></div><div class="sk" style="height:36px;width:96px;border-radius:12px"></div></div>
+ <div class="grid3" style="margin-top:16px">
+  <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+ </div>
+</main><nav><div>Collection</div><div>Trades</div><div class="on">Wishlist</div><div>Profile</div></nav></div>
+<div class="note">Pulse uses motion-safe only; with reduced motion all skeletons are still.</div>
+
+<div class="cap"><b>6</b> Not found: /u/jonymtg, /trades/no_such_user (AC-9, AC-10, AC-11)</div>
+<div class="screen" style="min-height:560px"><div class="hdr"><i></i>ManaPals</div>
+<main><div class="empty settle">
+ <div class="icon">🔍</div>
+ <div><p class="t">No ManaPal here</p><p class="b">We couldn't find that username. Check the spelling, or find your friend from Profile.</p></div>
+ <a class="amber">Find a friend</a>
+</div></main><nav><div>Collection</div><div>Trades</div><div>Wishlist</div><div>Profile</div></nav></div>
+<div class="note">Same icon tile + heading + body + amber button as the Trades empty state. No tab is highlighted, since the route is unknown. <span class="dl">✨ D-5</span> Card settles in; copy stays plain.</div>
+
+<div class="cap"><b>7</b> Error: any (main) page throws, e.g. /wishlist (AC-13, AC-14)</div>
+<div class="screen" style="min-height:560px"><div class="hdr"><i></i>ManaPals</div>
+<main><div class="alert settle" role="alert" style="margin-top:8px">
+ <p class="t">Something went wrong</p>
+ <p class="b">This page couldn't load. Nothing was changed.</p>
+ <div class="btn2">Try again</div>
+</div></main><nav><div>Collection</div><div>Trades</div><div class="on">Wishlist</div><div>Profile</div></nav></div>
+<div class="note">Identical card to CollectionLoadError. No error message, stack or digest is shown. <span class="dl">✨ D-5</span> Same settle-in.</div>
+</body></html>
