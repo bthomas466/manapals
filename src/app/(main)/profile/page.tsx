@@ -6,6 +6,15 @@ import { getAcceptedFriends } from "@/lib/friends/queries";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
 import VisibilityToggle from "@/components/profile/VisibilityToggle";
 import FriendSearchBox from "@/components/profile/FriendSearchBox";
+import ProfileStats from "@/components/profile/ProfileStats";
+import { getCollectionItems } from "@/lib/collection/queries";
+import { summarizeCollection } from "@/lib/collection/summary";
+import { readWishlistItems } from "@/lib/wishlist/queries";
+import {
+  countTradeMatches,
+  TRADE_COLLECTION_COLUMNS,
+  type CollectionItemWithOracle,
+} from "@/lib/trades/match";
 import { IncomingRequestActions, OutgoingRequestActions } from "@/components/friends/FriendRequestActions";
 
 type OtherProfile = {
@@ -26,11 +35,29 @@ export default async function ProfilePage() {
   const profile = await ensureProfile(supabase, user);
   const friends = await getAcceptedFriends(supabase, user.id);
 
-  const { data: pendingRows } = await supabase
-    .from("friendships")
-    .select("id, requester_id, addressee_id, status")
-    .eq("status", "pending")
-    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+  // Reads every friend's whole collection and wishlist to count trade matches
+  // (documented trade-off in the spec); all reads run in parallel.
+  const [{ data: pendingRows }, viewerItems, viewerWishlist, friendReads] = await Promise.all([
+    supabase
+      .from("friendships")
+      .select("id, requester_id, addressee_id, status")
+      .eq("status", "pending")
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`),
+    getCollectionItems<CollectionItemWithOracle>(supabase, user.id, TRADE_COLLECTION_COLUMNS),
+    readWishlistItems(supabase, user.id),
+    Promise.all(
+      friends.map(async (friend) => {
+        const [items, wishlist] = await Promise.all([
+          getCollectionItems<CollectionItemWithOracle>(supabase, friend.user_id, TRADE_COLLECTION_COLUMNS),
+          readWishlistItems(supabase, friend.user_id),
+        ]);
+        return { items, wishlist };
+      })
+    ),
+  ]);
+
+  const cardCount = viewerItems.ok ? summarizeCollection(viewerItems.rows).totalCards : null;
+  const tradeCount = countTradeMatches({ viewerItems, viewerWishlist, friends: friendReads });
 
   const pending = pendingRows ?? [];
   const incoming = pending.filter((f) => f.addressee_id === user.id);
@@ -78,21 +105,7 @@ export default async function ProfilePage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Cards", value: "0" },
-          { label: "Friends", value: String(friends.length) },
-          { label: "Trades", value: "0" },
-        ].map(({ label, value }) => (
-          <div
-            key={label}
-            className="rounded-[--radius-card] bg-elevated border border-border p-3 text-center"
-          >
-            <p className="text-xl font-extrabold text-text-primary">{value}</p>
-            <p className="text-xs text-text-muted">{label}</p>
-          </div>
-        ))}
-      </div>
+      <ProfileStats cards={cardCount} friends={friends.length} trades={tradeCount} />
 
       {/* Collection visibility */}
       <section className="space-y-2">

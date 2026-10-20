@@ -1,6 +1,10 @@
 import type { CollectionItem } from "@/components/collection/CollectionGrid";
 import type { WishlistItem } from "@/lib/wishlist/queries";
 import { unitPriceUsd } from "@/lib/cards/price";
+import type { ReadResult } from "@/lib/collection/read";
+
+export const TRADE_COLLECTION_COLUMNS =
+  "id, quantity, finish, condition, binder_name, trade_status, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)";
 
 export type CardSummary = {
   scryfall_id: string;
@@ -137,4 +141,29 @@ export function computeTradeMatches(input: {
   bothHaveExtras.sort(byName);
 
   return { youHaveTheyWant, theyHaveYouWant, bothHaveExtras };
+}
+
+// Total "You have, they want" + "They have, you want" across all friends, for the
+// Profile Trades tile. null (never 0) when any read failed, because a failed
+// wishlist read would otherwise look like an empty one ("wants everything").
+export function countTradeMatches(input: {
+  viewerItems: ReadResult<CollectionItemWithOracle>;
+  viewerWishlist: ReadResult<WishlistItem>;
+  friends: { items: ReadResult<CollectionItemWithOracle>; wishlist: ReadResult<WishlistItem> }[];
+}): number | null {
+  const { viewerItems, viewerWishlist } = input;
+  if (!viewerItems.ok || !viewerWishlist.ok) return null;
+
+  let total = 0;
+  for (const friend of input.friends) {
+    if (!friend.items.ok || !friend.wishlist.ok) return null;
+    const { youHaveTheyWant, theyHaveYouWant } = computeTradeMatches({
+      viewerItems: viewerItems.rows,
+      friendItems: friend.items.rows,
+      viewerWishlist: viewerWishlist.rows,
+      friendWishlist: friend.wishlist.rows,
+    });
+    total += youHaveTheyWant.length + theyHaveYouWant.length;
+  }
+  return total;
 }

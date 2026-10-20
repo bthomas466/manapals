@@ -40,6 +40,7 @@ type SeedUser = {
 //                          Path to Exile is wished too but the friend is in opt-in mode
 //                          with only Swords marked Available, so it is not offered)
 //   You both have extras:  Sol Ring             (player owns 2)
+// The Profile Trades tile for e2e_player expects 2 (the first two sections only).
 // e2e_player has no trade flags (whole collection). e2e_stranger is not a friend.
 const USERS: SeedUser[] = [
   {

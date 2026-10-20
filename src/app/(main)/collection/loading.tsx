@@ -2,7 +2,7 @@ import CardGrid from "@/components/cards/CardGrid";
 
 export default function CollectionLoading() {
   return (
-    <div className="px-4 pt-6 space-y-4 pb-4 animate-pulse" aria-busy="true" aria-label="Loading collection">
+    <div className="px-4 pt-6 space-y-4 pb-4 motion-safe:animate-pulse" aria-busy="true" aria-label="Loading collection">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-2">
           <div className="h-6 w-32 rounded-[--radius-chip] bg-elevated" />
