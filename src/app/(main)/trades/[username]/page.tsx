@@ -9,11 +9,9 @@ import {
   computeTradeMatches,
   describeOffer,
   formatOfferLine,
+  TRADE_COLLECTION_COLUMNS,
   type CollectionItemWithOracle,
 } from "@/lib/trades/match";
-
-const TRADE_COLLECTION_COLUMNS =
-  "id, quantity, finish, condition, binder_name, trade_status, card:cards(scryfall_id, oracle_id, name, set_code, rarity, colors, image_small, image_normal, price_usd, price_usd_foil)";
 
 export default async function TradeMatchPage({
   params,

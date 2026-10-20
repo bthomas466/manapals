@@ -35,3 +35,10 @@ body {
   background-color: oklch(13% 0.01 260);
   color: oklch(96% 0.005 90);
 }
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

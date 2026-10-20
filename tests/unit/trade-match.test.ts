@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateByCard,
   computeTradeMatches,
+  countTradeMatches,
   describeOffer,
   formatOfferLine,
   offeredItems,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/trades/match";
 import type { TradeStatus } from "@/lib/trades/flags";
 import type { WishlistItem } from "@/lib/wishlist/queries";
+import type { ReadResult } from "@/lib/collection/read";
 
 let nextId = 1;
 
@@ -327,5 +329,66 @@ describe("describeOffer and formatOfferLine", () => {
 
   it("an empty collection reads whole collection", () => {
     expect(formatOfferLine(describeOffer([]))).toBe("Offering: your whole collection");
+  });
+});
+
+describe("countTradeMatches", () => {
+  const ok = <T,>(rows: T[]): ReadResult<T> => ({ ok: true, rows });
+  const failed = { ok: false, error: "boom" } as const;
+
+  // Viewer owns "mine" and "shared" (x2).
+  const viewerItems = [item("mine"), item("shared", { quantity: 2 })];
+
+  it("AC-1: sums 'you have, they want' + 'they have, you want' across friends, ignoring extras", () => {
+    // Friend A: mine -> youHaveTheyWant (1); theirsA -> theyHaveYouWant (1); shared -> extras (1, not counted).
+    const friendA = { items: ok([item("theirsA"), item("shared")]), wishlist: ok<WishlistItem>([]) };
+    // Friend B: owns mine, shared, plus two cards viewer lacks -> theyHaveYouWant 2; nothing for viewer to offer.
+    const friendB = {
+      items: ok([item("mine"), item("shared"), item("b1"), item("b2")]),
+      wishlist: ok<WishlistItem>([]),
+    };
+    expect(
+      countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: ok([]), friends: [friendA, friendB] })
+    ).toBe(4);
+  });
+
+  it("AC-1: no friends gives 0", () => {
+    expect(countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: ok([]), friends: [] })).toBe(0);
+  });
+
+  it("AC-1: a friend with no matches contributes 0", () => {
+    const friend = { items: ok([item("mine"), item("shared")]), wishlist: ok<WishlistItem>([]) };
+    expect(countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: ok([]), friends: [friend] })).toBe(0);
+  });
+
+  it("AC-2: a friend whose collection read failed gives null, not 0", () => {
+    const good = { items: ok([item("theirs")]), wishlist: ok<WishlistItem>([]) };
+    const bad = { items: failed, wishlist: ok<WishlistItem>([]) };
+    expect(countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: ok([]), friends: [good, bad] })).toBeNull();
+  });
+
+  it("AC-2: a failed friend wishlist read gives null", () => {
+    const bad = { items: ok([item("theirs")]), wishlist: failed };
+    expect(countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: ok([]), friends: [bad] })).toBeNull();
+  });
+
+  it("AC-2: a failed viewer wishlist read gives null, even with no friends", () => {
+    expect(countTradeMatches({ viewerItems: ok(viewerItems), viewerWishlist: failed, friends: [] })).toBeNull();
+  });
+
+  it("AC-2: a failed viewer collection read gives null", () => {
+    const friend = { items: ok([item("theirs")]), wishlist: ok<WishlistItem>([]) };
+    expect(countTradeMatches({ viewerItems: failed, viewerWishlist: ok([]), friends: [friend] })).toBeNull();
+  });
+
+  it("respects wishlists when counting", () => {
+    const friend = { items: ok([item("t1"), item("t2")]), wishlist: ok<WishlistItem>([]) };
+    // Viewer only wants t2, so only one 'they have, you want'; friend's empty wishlist wants all of viewer's offer ("mine", "shared").
+    const count = countTradeMatches({
+      viewerItems: ok(viewerItems),
+      viewerWishlist: ok([want("t2", "specific")]),
+      friends: [friend],
+    });
+    expect(count).toBe(3);
   });
 });

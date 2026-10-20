@@ -239,3 +239,111 @@ Left out: any joke or flavor copy on not-found and error pages (serious moments 
 
 ## Decisions (spec gate, 2026-10-20)
 Owner replied `approve` with no changes. Recommended defaults accepted for all open questions (Q1 trade match = "You have, they want" + "They have, you want"; Q2 `unstable_retry()`; Q3 always show "Nothing was changed"; Q4 `motion-safe:animate-pulse` in `collection/loading.tsx`; Q5 root 404 is a follow-up; Q6 only Cards links; Q7 Vitest render tests only; Q8 no split). All Delight items D-1 to D-5 remain in scope.
+
+## Technical design
+
+Next.js references checked: `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/{error,not-found,loading}.md` and `04-functions/not-found.md`. Here is what they mean for this design:
+- `error.tsx` must be a Client Component. Its props are `{ error: Error & { digest?: string }, unstable_retry: () => void }`, and `reset` is also passed. It wraps `loading`, `not-found`, `page` and nested layouts in its segment, but not that segment's own `layout.tsx`. So `(main)/error.tsx` renders inside the header and bottom nav. In production, Server Component errors reach the client with a generic message plus a `digest`. We still never render either.
+- `notFound()` throws to the closest `not-found.tsx` above it. So `(main)/not-found.tsx` covers `/u/[username]` and `/trades/[username]` and renders inside `(main)/layout.tsx`. URLs that match no route still go to the root default (out of scope, Q5).
+- With a `loading.tsx` above a page, the response streams and its status is 200 (Next adds `<meta name="robots" content="noindex">`). See Risks.
+
+### Changes
+**Logic (`src/lib/**`)**
+- `src/lib/trades/match.ts`: add `export const TRADE_COLLECTION_COLUMNS` (moved unchanged from `trades/[username]/page.tsx`), so Profile reads exactly the same shape. Add the pure function `countTradeMatches(input): number | null` next to `computeTradeMatches`:
+  ```ts
+  export function countTradeMatches(input: {
+    viewerItems: ReadResult<CollectionItemWithOracle>;
+    viewerWishlist: ReadResult<WishlistItem>;
+    friends: { items: ReadResult<CollectionItemWithOracle>; wishlist: ReadResult<WishlistItem> }[];
+  }): number | null
+  ```
+  It returns `0` when `friends` is empty. It returns `null` if any of these reads is `ok: false`: the viewer's collection, the viewer's wishlist, or any friend's collection or wishlist. Otherwise it returns the sum over friends of `youHaveTheyWant.length + theyHaveYouWant.length` from `computeTradeMatches`. `bothHaveExtras` is ignored (Q1).
+- `src/lib/wishlist/queries.ts`: add `readWishlistItems(supabase, userId): Promise<ReadResult<WishlistItem>>`, with the same query and `{ ok: false, error }` when Supabase returns an error. `getWishlistItems` becomes a thin wrapper that returns `rows` or `[]`, so its three callers are unchanged. **This is needed for correctness.** Today a failed wishlist read returns `[]`, and `computeTradeMatches` treats an empty wishlist as "wants everything". A failed read would therefore *inflate* the count instead of showing "—".
+- `src/lib/profile/stats.ts` (new): `formatStat(value: number | null): string`. It returns `"—"` for `null`, otherwise `Intl.NumberFormat("en-US")` (`1,214`). The page doesn't format anything inline.
+
+**Components**
+- `src/components/profile/ProfileStats.tsx` (new, server-compatible, no `"use client"`): props `{ cards: number | null; friends: number; trades: number | null }`. It renders the three-tile grid. Each tile gets a `data-testid`: `stat-cards`, `stat-friends` or `stat-trades`.
+  - **Cards tile:** a `next/link` to `/collection` with `min-h-11`, a faint amber border (`border-amber/30`), an `aria-hidden` amber chevron after the label, and the D-2 press classes `motion-safe:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-100`.
+  - **"—" values:** use `text-text-secondary`.
+  - **D-1:** the Trades number uses `text-amber` only when `trades > 0`.
+  - **D-3:** the wrapper uses `motion-safe:animate-[settle_250ms_ease-out_both]`.
+  - **D-4:** when `cards === 0` exactly, a `text-sm text-text-secondary` line under the grid reads "Your binder is empty. Tap Cards to add some." It is not shown for `null`.
+
+**Pages / route files (`src/app/(main)/`)**
+- `profile/page.tsx`: replace the inline stats array with `<ProfileStats>`.
+  - After `getAcceptedFriends`, read these in one `Promise.all`: the viewer's collection (`getCollectionItems(…, TRADE_COLLECTION_COLUMNS)`), the viewer's wishlist (`readWishlistItems`), and, for each friend, `[getCollectionItems, readWishlistItems]`. Friend reads are skipped when there are no friends.
+  - Cards is `viewer.ok ? summarizeCollection(viewer.rows).totalCards : null`.
+  - Trades is `countTradeMatches(...)`.
+  - Nothing else on the page changes.
+- `trades/[username]/page.tsx`: import `TRADE_COLLECTION_COLUMNS` from `@/lib/trades/match` instead of defining it locally. No behaviour change.
+- `not-found.tsx` (new, Server Component):
+  - A centred icon tile with a magnifier glyph (`aria-hidden`), an `<h1>` reading "No ManaPal here", and the body copy.
+  - An amber `Link` to `/profile` (`bg-amber text-page min-h-11 inline-flex items-center`) reading "Find a friend".
+  - The content wrapper uses D-5 `motion-safe:animate-[settle_250ms_ease-out_both]`.
+  - It follows the Trades empty-state markup.
+- `error.tsx` (new, `"use client"`):
+  - Name the default export `MainError`, so it doesn't shadow the global `Error`. Props `{ error: Error & { digest?: string }; unstable_retry: () => void }`.
+  - It calls `useEffect(() => console.error(error), [error])`.
+  - It renders a `role="alert"` elevated card styled like `CollectionLoadError`, with D-5 settle animation. It contains "Something went wrong" as an `<h1>`, "This page couldn't load. Nothing was changed.", and a full-width `min-h-11` `<button type="button" onClick={() => unstable_retry()}>Try again</button>`.
+  - It never renders `error.message` or `error.digest`.
+  - A one-line comment points to the CODING_STANDARDS rule "Return results, don't throw, from server actions", which is what keeps "Nothing was changed" true (Q3). That rule already exists, so `CODING_STANDARDS.md` needs no edit.
+- `profile/loading.tsx` (new): `aria-busy="true" aria-label="Loading profile"`, `motion-safe:animate-pulse`. Contains a `w-16 h-16` round avatar block with two bars, a `grid grid-cols-3 gap-3` of three tile blocks about 64px tall, and two section bars, all `bg-elevated`.
+- `trades/loading.tsx` (new): `aria-label="Loading trades"`. Contains title and subtitle bars, then three friend-row bars the height of the real rows (`h-16 rounded-[--radius-card]`).
+- `wishlist/loading.tsx` (new): `aria-label="Loading wishlist"`. Contains a header row (title and subtitle bars on the left, an `h-9 w-24` button block on the right), then `<CardGrid testId="card-grid-skeleton">` with nine `aspect-[5/7]` blocks, as in `collection/loading.tsx`.
+- `collection/loading.tsx`: change `animate-pulse` to `motion-safe:animate-pulse` (Q4). Nothing else changes.
+
+**Styles**
+- `src/app/globals.css`: add a top-level `@keyframes settle { from { opacity: 0; transform: translateY(6px); } }` for D-3 and D-5. It is used through Tailwind 4's arbitrary `animate-[settle_…]` value.
+
+**Tests:** see the Test plan.
+
+### Schema
+**No migration.** No tables, columns, indexes or RLS policies change, and nothing is backfilled. The PR does not need `db-change`. All new reads go through existing RLS-scoped queries (`collection_items` and `wishlist_items` filtered by `user_id`), the same ones `/trades/[username]` uses today.
+
+### Data flow
+- **`/profile`** (Server Component, dynamic). The sequence is `auth.getUser()`, then `ensureProfile`, then `getAcceptedFriends`. Next comes one `Promise.all` holding the existing pending-friendships query and the stats reads: the viewer's collection and wishlist, plus each friend's collection and wishlist. All of them run in parallel. Then the page calls `summarizeCollection` and `countTradeMatches` (pure) and passes three numbers or `null`s to `<ProfileStats>`. No client JS is added. The Cards tile is a plain `Link`, and D-2 and D-3 are CSS only.
+- **`(main)/not-found.tsx`:** a Server Component with no data reads. The existing `notFound()` calls in `/u/[username]` and `/trades/[username]` reach it.
+- **`(main)/error.tsx`:** a Client Component with no data reads. `unstable_retry()` re-fetches the failed segment's RSC payload.
+- **`loading.tsx` files:** static Server Components. Next uses them as the Suspense fallback while each segment's page awaits.
+- No new server actions or route handlers.
+
+### Logic placement
+- Pure and unit-tested: `countTradeMatches` (`src/lib/trades/match.ts`), `formatStat` (`src/lib/profile/stats.ts`), and the existing `summarizeCollection` (reused; the Cards count has no second counting rule).
+- I/O helper: `readWishlistItems` (`src/lib/wishlist/queries.ts`).
+- Presentational: `ProfileStats` decides only how values look: "—", D-1 colour, and D-4 visibility from `cards === 0`.
+- `profile/page.tsx` only fetches data and wires props.
+
+### Test plan
+| AC | Test | Where |
+|---|---|---|
+| AC-1 | `countTradeMatches`. Build items and wishlists with the existing `item()`/`want()` helpers: friend A yields 1, 1 and 1 (extras), friend B yields 0, 2 and 0. Expect `4`. Empty `friends` gives `0`. | `tests/unit/trade-match.test.ts` |
+| AC-2 | A friend collection `{ ok: false }` gives `null`. Also cover a failed friend wishlist, a failed viewer wishlist and a failed viewer collection, each giving `null`. | `tests/unit/trade-match.test.ts` |
+| AC-2 (support) | `readWishlistItems` returns `ok: false` when the fake client returns `{ error }`, and `getWishlistItems` still returns `[]`. | `tests/unit/wishlist-queries.test.ts` (new) |
+| AC-3, AC-4, AC-8 | `/profile`: `getByTestId("stat-cards")` contains "5" and not "0"; `stat-trades` contains "2"; `stat-friends` contains "1". The seeded `e2e_friend` owns 7 cards, so "5" also proves AC-8. | `tests/e2e/authed/profile-stats.spec.ts` (new) |
+| AC-5 | Tap `getByRole("link", { name: /Cards/ })`, expect URL `/collection`; `boundingBox().height >= 44`. | `tests/e2e/authed/profile-stats.spec.ts` |
+| AC-6 (+D-4) | Snapshot and restore like `collection-summary.serial.spec.ts`, then `setCollection([])`. On `/profile`, `stat-cards` shows "0" and "Your binder is empty. Tap Cards to add some." is visible. | `tests/e2e/authed/profile-stats.serial.spec.ts` (new) |
+| AC-7 (+D-1, D-4) | `renderToStaticMarkup(ProfileStats)` with `{ cards: null, friends: 1, trades: null }`: both tiles show "—" and no tile value is "0", and the D-4 line is absent. `{ cards: 1214, trades: 2 }` shows "1,214" and the Trades number has `text-amber`. `{ trades: 0 }` has no `text-amber` on the number. `{ cards: 0 }` shows the D-4 line. Also unit-test `formatStat` (`null` gives "—", `1214` gives "1,214", `0` gives "0"). | `tests/unit/profile-stats.test.ts` (new) |
+| AC-9 | `/u/no_such_user`: heading "No ManaPal here" and the body text are visible; header `getByRole("img", { name: "ManaPals" })` and `getByRole("navigation")` are visible; "This page could not be found" has count 0; `getComputedStyle(document.body).backgroundColor !== "rgb(255, 255, 255)"`. | `tests/e2e/authed/not-found.spec.ts` (new) |
+| AC-10 | Tap "Find a friend", expect URL `/profile` and the heading "Find a Friend" visible; link height `>= 44`. | `tests/e2e/authed/not-found.spec.ts` |
+| AC-11 | `/trades/no_such_user` shows "No ManaPal here". | `tests/e2e/authed/not-found.spec.ts` |
+| AC-12 | Add `/u/no_such_user` to the signed-out redirect loop. | `tests/e2e/auth.spec.ts` (`mobile` project) |
+| AC-13 | `renderToStaticMarkup(MainError, { error: new Error("db exploded: secret"), unstable_retry })` contains "Something went wrong", "Nothing was changed" and `<button…>Try again</button>`, and does not contain "db exploded" or "secret". | `tests/unit/main-error.test.ts` (new, `// @vitest-environment jsdom`, like `manabox.test.ts`) |
+| AC-14 | In jsdom, set `globalThis.IS_REACT_ACT_ENVIRONMENT = true`, `createRoot(container)`, then `await act(() => root.render(...))` with `unstable_retry = vi.fn()`. Call `button.click()` and expect it to have been called once. Spy on `console.error` to silence and assert the log. | `tests/unit/main-error.test.ts` |
+| AC-15 | For each new `loading.tsx`, the markup contains `aria-busy="true"`, the label and `motion-safe:animate-pulse`, and does not match `/(?<!motion-safe:)animate-pulse/`. | `tests/unit/loading-skeletons.test.ts` (new) |
+| AC-16 | Same assertions on `collection/loading.tsx`, plus `aria-label="Loading collection"` and `data-testid="card-grid-skeleton"`. The existing `card-grid.test.ts` AC-8 must keep passing unchanged. | `tests/unit/loading-skeletons.test.ts` |
+| AC-17 | Set the viewport to 375×800 on `/profile` (in `profile-stats.spec.ts`) and on `/u/no_such_user` (in `not-found.spec.ts`), then check `scrollWidth <= 375`. | both new E2E specs |
+
+Also: add `"src/app/(main)/profile/page.tsx"` to the `pages` list in `tests/unit/collection-readers-wiring.test.ts`. That guards that Profile reads collections only through `getCollectionItems`.
+
+**Seed data:** no change to `scripts/seed-staging.ts`. The current seed already gives 5 cards for `e2e_player`, 7 for `e2e_friend` and 2 trade matches (Arcane Signet + Swords to Plowshares). `e2e_stranger` is not friended. Update the "Expected Trade Match" comment block to say the Profile Trades tile expects `2`.
+
+**Screenshots:** no new `toHaveScreenshot` baselines are required. Existing baselines aren't affected, because the Profile, Wishlist and Trades pages have none.
+
+### Risks
+- **Profile cost grows with friends and collection size (main risk).** Each `/profile` load now reads the viewer's whole collection and wishlist, plus every accepted friend's whole collection and wishlist. That is 2 + 2N queries, with collections paged in groups of 1,000. This goes against the CODING_STANDARDS rule "Think in large collections" (don't load a whole collection to count it in JS). The spec accepted it on purpose (Q1, and "reuse `getCollectionItems`/`summarizeCollection`"), so the reviewer should treat it as a documented decision. Reads run in parallel. At MVP friend counts this is fine. At 10+ friends with 10k-card collections, Profile becomes the heaviest page in the app. The follow-up is a SQL aggregate or RPC for counts (out of scope).
+- **The streamed not-found on `/trades/no_such_user` returns HTTP 200, not 404.** The new `trades/loading.tsx` wraps `trades/[username]`, so the response streams before `notFound()` runs. Next adds `noindex`, and the UI is correct (AC-11 checks only the UI). Likewise, `/trades/<existing non-friend>` now redirects after streaming starts, on the client instead of with a 307. It still lands on `/trades`. `/u/no_such_user` has no `loading.tsx` above it and keeps its 404.
+- **A silent wrong value could come from the friendships read.** `getAcceptedFriends` returns `[]` on error, so a failed friendships read would show Friends "0" and Trades "0" rather than "—". This is existing behaviour (Friends tile is unchanged by spec). Not fixed here; noted as a possible follow-up.
+- **Failed wishlist reads.** Without `readWishlistItems`, a failed wishlist read would count as "wants everything" and inflate Trades. The new helper prevents that. Wishlist reads are still unpaged, so a wishlist over 1,000 rows would be silently truncated. That is existing behaviour shared with `/trades/[username]`.
+- **Privacy.** Profile reads friends' collections and wishlists through RLS-scoped, `user_id`-filtered queries and only renders a total. Only accepted friends from `getAcceptedFriends` are read, never pending users or strangers. The not-found page doesn't tell "private" apart from "missing", and the error page never renders `message` or `digest` (AC-13). Signed-out requests are redirected by `src/proxy.ts` before any lookup (AC-12).
+- **Error boundary scope.** `(main)/error.tsx` catches render and read throws on every `(main)` page, but not errors in `(main)/layout.tsx` (header, `BottomNav`). Those still hit Next's default page (`global-error` is out of scope). `unstable_retry` is marked unstable in 16.2 and may be renamed in a later Next upgrade. The AC-14 test will catch a rename.
+- **Migration safety:** not applicable, because there is no migration.

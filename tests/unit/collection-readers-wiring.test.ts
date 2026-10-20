@@ -10,6 +10,7 @@ const pages = [
   "src/app/(main)/collection/page.tsx",
   "src/app/(main)/trades/[username]/page.tsx",
   "src/app/(main)/u/[username]/page.tsx",
+  "src/app/(main)/profile/page.tsx",
 ];
 
 describe("page wiring", () => {
