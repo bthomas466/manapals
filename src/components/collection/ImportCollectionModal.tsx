@@ -11,14 +11,13 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
   const { step, chooseFile, confirm, reset } = useCollectionImport({ onSuccess: () => router.refresh() });
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-page/70">
       <div className="w-full max-w-md rounded-t-[--radius-card] bg-surface border-t border-border p-5 pb-8 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">Import Collection</h2>
           <button
             onClick={onClose}
-            className="text-text-muted text-sm font-semibold"
-            aria-label="Close"
+            className="min-h-11 min-w-11 px-2 text-text-secondary text-sm font-semibold"
           >
             Cancel
           </button>
@@ -49,7 +48,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Choose CSV file
             </button>
@@ -67,7 +66,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             </div>
             <button
               onClick={() => reset()}
-              className="w-full rounded-[--radius-btn] border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
+              className="min-h-11 w-full rounded-[--radius-btn] border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
             >
               Try another file
             </button>
@@ -84,7 +83,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             </p>
             <button
               onClick={() => confirm(step.rows)}
-              className="w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Replace collection
             </button>
@@ -105,7 +104,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             </p>
             {step.unmatched.length > 0 && (
               <div className="rounded-[--radius-chip] border border-border bg-elevated p-3 space-y-1 max-h-40 overflow-y-auto">
-                <p className="text-xs font-semibold text-text-muted">
+                <p className="text-xs font-semibold text-text-secondary">
                   {`${step.unmatched.length} card${step.unmatched.length === 1 ? "" : "s"} couldn't be matched:`}
                 </p>
                 {step.unmatched.map((row, i) => (
@@ -117,7 +116,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             )}
             <button
               onClick={onClose}
-              className="w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Done
             </button>

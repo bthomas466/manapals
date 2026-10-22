@@ -66,7 +66,7 @@ export default function CardTradeSheet({
   if (!card) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-page/70">
       <div
         role="dialog"
         aria-modal="true"
@@ -83,7 +83,7 @@ export default function CardTradeSheet({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 min-h-11 px-2 text-sm font-semibold text-text-muted"
+            className="shrink-0 min-h-11 px-2 text-sm font-semibold text-text-secondary"
           >
             Close
           </button>

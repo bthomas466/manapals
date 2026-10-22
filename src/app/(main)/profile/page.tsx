@@ -99,7 +99,7 @@ export default async function ProfilePage() {
           {profile ? (
             <ProfileEditForm initialDisplayName={profile.display_name} initialUsername={profile.username} />
           ) : (
-            <p className="text-sm text-text-muted truncate">{user.email}</p>
+            <p className="text-sm text-text-secondary truncate">{user.email}</p>
           )}
         </div>
       </div>
@@ -140,7 +140,7 @@ export default async function ProfilePage() {
                     <p className="text-sm font-semibold text-text-primary truncate">
                       {other?.display_name ?? "Unknown"}
                     </p>
-                    <p className="text-xs text-text-muted truncate">@{other?.username ?? "?"}</p>
+                    <p className="text-xs text-text-secondary truncate">@{other?.username ?? "?"}</p>
                   </div>
                   <IncomingRequestActions friendshipId={f.id} />
                 </div>
@@ -157,7 +157,7 @@ export default async function ProfilePage() {
                     <p className="text-sm font-semibold text-text-primary truncate">
                       {other?.display_name ?? "Unknown"}
                     </p>
-                    <p className="text-xs text-text-muted truncate">Request sent</p>
+                    <p className="text-xs text-text-secondary truncate">Request sent</p>
                   </div>
                   <OutgoingRequestActions friendshipId={f.id} />
                 </div>
@@ -194,7 +194,7 @@ export default async function ProfilePage() {
                   <p className="text-sm font-semibold text-text-primary truncate">
                     {friend.display_name}
                   </p>
-                  <p className="text-xs text-text-muted truncate">@{friend.username}</p>
+                  <p className="text-xs text-text-secondary truncate">@{friend.username}</p>
                 </div>
               </Link>
             ))}

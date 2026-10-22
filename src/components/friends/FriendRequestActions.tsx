@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { respondToFriendRequest, removeFriendship } from "@/lib/friends/actions";
+import FieldError from "@/components/ui/FieldError";
 
 export function IncomingRequestActions({ friendshipId }: { friendshipId: number }) {
   const [pending, startTransition] = useTransition();
@@ -23,19 +24,19 @@ export function IncomingRequestActions({ friendshipId }: { friendshipId: number 
         <button
           disabled={pending}
           onClick={() => respond(true)}
-          className="rounded-[--radius-chip] bg-amber px-3 py-1.5 text-xs font-bold text-page disabled:opacity-50"
+          className="min-h-11 min-w-11 rounded-[--radius-chip] bg-amber px-3 py-1.5 text-xs font-bold text-page disabled:opacity-50"
         >
           Accept
         </button>
         <button
           disabled={pending}
           onClick={() => respond(false)}
-          className="rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
+          className="min-h-11 min-w-11 rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
         >
           Decline
         </button>
       </div>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      <FieldError message={error} />
     </div>
   );
 }
@@ -58,11 +59,11 @@ export function OutgoingRequestActions({ friendshipId }: { friendshipId: number 
       <button
         disabled={pending}
         onClick={cancel}
-        className="rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
+        className="min-h-11 min-w-11 rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
       >
         Cancel
       </button>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      <FieldError message={error} />
     </div>
   );
 }

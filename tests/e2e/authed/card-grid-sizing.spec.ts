@@ -130,12 +130,12 @@ test.describe("card grid sizing", () => {
   });
 
   test("AC-3: wishlist remove buttons are the same size on phone and desktop", async ({ page }) => {
-    // The button's classes are untouched, so its size must not depend on viewport.
+    // The button's classes don't vary by viewport, so its size must not depend on viewport.
     // (No fixed value is hard-coded because it depends on font rendering.)
     const sizeAt = async (width: number) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/wishlist");
-      const button = page.getByTestId("card-grid").getByRole("button", { name: "✕" }).first();
+      const button = page.getByTestId("card-grid").getByRole("button", { name: /^Remove .* from wishlist$/ }).first();
       await expect(button).toBeVisible();
       return (await button.boundingBox())!;
     };

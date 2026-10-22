@@ -62,7 +62,7 @@ describe("brand assets", () => {
     expect(read(served).equals(read(source))).toBe(true);
   });
 
-  it("AC-10: @theme defines exactly the 10 existing --color-* tokens", () => {
+  it("AC-10: @theme defines exactly the 11 --color-* tokens (10 existing plus danger)", () => {
     const css = read("src/app/globals.css").toString("utf8");
     const block = css.match(/@theme\s*\{([\s\S]*?)\n\}/);
     expect(block).not.toBeNull();
@@ -76,6 +76,7 @@ describe("brand assets", () => {
         "border-strong",
         "amber",
         "success",
+        "danger",
         "text-primary",
         "text-secondary",
         "text-muted",

@@ -22,17 +22,17 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className="flex flex-1 flex-col items-center justify-center gap-1 min-w-0 transition-colors"
+              className="flex flex-1 flex-col items-center justify-center gap-1 min-w-0"
               aria-current={active ? "page" : undefined}
             >
               <Icon
                 className={`w-6 h-6 transition-colors ${
-                  active ? "text-amber" : "text-text-muted"
+                  active ? "text-amber" : "text-text-secondary"
                 }`}
               />
               <span
                 className={`text-[10px] font-semibold leading-none transition-colors ${
-                  active ? "text-amber" : "text-text-muted"
+                  active ? "text-amber" : "text-text-secondary"
                 }`}
               >
                 {label}

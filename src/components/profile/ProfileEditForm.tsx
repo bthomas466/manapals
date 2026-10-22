@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "@/lib/friends/actions";
+import FieldError from "@/components/ui/FieldError";
 
 export default function ProfileEditForm({
   initialDisplayName,
@@ -21,8 +22,11 @@ export default function ProfileEditForm({
   if (!editing) {
     return (
       <div className="flex items-center gap-2">
-        <p className="text-sm text-text-muted">@{initialUsername}</p>
-        <button onClick={() => setEditing(true)} className="text-xs font-semibold text-amber">
+        <p className="text-sm text-text-secondary">@{initialUsername}</p>
+        <button
+          onClick={() => setEditing(true)}
+          className="inline-flex min-h-11 min-w-11 items-center px-2 text-xs font-semibold text-amber"
+        >
           Edit
         </button>
       </div>
@@ -54,28 +58,28 @@ export default function ProfileEditForm({
         placeholder="Display name"
         className="w-full rounded-[--radius-chip] border border-border bg-elevated px-3 py-2 text-sm text-text-primary"
       />
-      <div className="flex items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3 py-2">
-        <span className="text-sm text-text-muted">@</span>
+      <div className="focus-ring-within flex items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3 py-2">
+        <span className="text-sm text-text-secondary">@</span>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
           placeholder="username"
-          className="flex-1 bg-transparent text-sm text-text-primary outline-none"
+          className="flex-1 bg-transparent text-sm text-text-primary"
         />
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      <FieldError message={error} />
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={pending}
-          className="flex-1 rounded-[--radius-btn] bg-amber py-2 text-sm font-bold text-page disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-[--radius-btn] bg-amber py-2 text-sm font-bold text-page disabled:opacity-50"
         >
           Save
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="flex-1 rounded-[--radius-btn] border border-border bg-elevated py-2 text-sm font-semibold text-text-secondary"
+          className="min-h-11 flex-1 rounded-[--radius-btn] border border-border bg-elevated py-2 text-sm font-semibold text-text-secondary"
         >
           Cancel
         </button>

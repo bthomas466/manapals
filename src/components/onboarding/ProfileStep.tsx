@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveOnboardingProfile } from "@/lib/onboarding/actions";
 import { normalizeUsernameInput, PROFILE_SAVE_FAILED } from "@/lib/profile/validate";
+import FieldError from "@/components/ui/FieldError";
 import type { WizardProfile } from "./OnboardingWizard";
 
 const inputClass =
@@ -89,8 +90,8 @@ export default function ProfileStep({
         <label htmlFor="username" className="text-sm font-semibold text-text-secondary">
           Username
         </label>
-        <div className="flex min-h-11 items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3">
-          <span className="text-base text-text-muted">@</span>
+        <div className="focus-ring-within flex min-h-11 items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3">
+          <span className="text-base text-text-secondary">@</span>
           <input
             id="username"
             value={username}
@@ -98,21 +99,17 @@ export default function ProfileStep({
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none"
+            className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-text-primary"
           />
         </div>
-        <p className="break-all text-xs text-text-muted">/u/{username}</p>
+        <p className="break-all text-xs text-text-secondary">/u/{username}</p>
       </div>
 
       <p className="text-sm text-text-secondary">
         Only friends can see your collection. You can change this in Profile.
       </p>
 
-      {error && (
-        <p role="alert" className="text-sm text-red-500">
-          {error}
-        </p>
-      )}
+      <FieldError message={error} />
 
       <button
         type="submit"
