@@ -12,9 +12,13 @@ test("AC-2: tapping a visibility option with a pointer shows no focus ring", asy
   const publicBtn = page.getByRole("button", { name: "Public", exact: true });
   await expect(friendsOnly).toHaveClass(/bg-amber/);
   try {
-    await publicBtn.click();
+    // Press without releasing: focus lands on mousedown, before the action disables the button.
+    const box = (await publicBtn.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
     await expect(publicBtn).toBeFocused();
     await expect(publicBtn).toHaveCSS("outline-style", "none");
+    await page.mouse.up();
     // The class flips only after the server action succeeds, so the write has landed.
     await expect(publicBtn).toHaveClass(/bg-amber/, { timeout: 10_000 });
   } finally {

@@ -51,8 +51,8 @@ for (const path of ["/profile", "/collection", "/wishlist", "/u/e2e_friend"]) {
       await page.keyboard.press("Tab");
       let ring = await ringOf(page);
       if (ring.isBody) break;
-      // The Next.js dev overlay (dev server only) is not part of the app.
-      if (ring.tag.startsWith("nextjs-portal")) continue;
+      // The Next.js dev overlay (dev server) and the Vercel preview toolbar are not part of the app.
+      if (ring.tag.startsWith("nextjs-portal") || ring.tag.startsWith("vercel-live-feedback")) continue;
       // Some elements carry transition-colors, which briefly animates the outline-color in.
       await expect
         .poll(async () => (ring = await ringOf(page)).color, { timeout: 2_000 })
