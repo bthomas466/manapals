@@ -80,7 +80,7 @@ export default async function ProfilePage() {
     <div className="px-4 pt-6 space-y-6">
       {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-[--radius-avatar] bg-elevated border border-border overflow-hidden flex items-center justify-center text-2xl shrink-0">
+        <div className="w-16 h-16 rounded-avatar bg-elevated border border-border overflow-hidden flex items-center justify-center text-2xl shrink-0">
           {profile?.avatar_url ?? user.user_metadata?.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -134,7 +134,7 @@ export default async function ProfilePage() {
               return (
                 <div
                   key={f.id}
-                  className="flex items-center justify-between gap-3 rounded-[--radius-card] bg-elevated border border-border p-3"
+                  className="flex items-center justify-between gap-3 rounded-card bg-elevated border border-border p-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text-primary truncate">
@@ -151,7 +151,7 @@ export default async function ProfilePage() {
               return (
                 <div
                   key={f.id}
-                  className="flex items-center justify-between gap-3 rounded-[--radius-card] bg-elevated border border-border p-3"
+                  className="flex items-center justify-between gap-3 rounded-card bg-elevated border border-border p-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text-primary truncate">
@@ -180,9 +180,9 @@ export default async function ProfilePage() {
               <Link
                 key={friend.friendshipId}
                 href={`/u/${friend.username}`}
-                className="flex items-center gap-3 rounded-[--radius-card] bg-elevated border border-border p-3"
+                className="flex items-center gap-3 rounded-card bg-elevated border border-border p-3"
               >
-                <div className="w-10 h-10 rounded-[--radius-avatar] bg-surface border border-border overflow-hidden flex items-center justify-center text-lg shrink-0">
+                <div className="w-10 h-10 rounded-avatar bg-surface border border-border overflow-hidden flex items-center justify-center text-lg shrink-0">
                   {friend.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={friend.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -226,7 +226,7 @@ function SignOutButton() {
     >
       <button
         type="submit"
-        className="w-full rounded-[--radius-btn] border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
+        className="w-full rounded-btn border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
       >
         Sign out
       </button>

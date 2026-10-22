@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatStat } from "@/lib/profile/stats";
 
-const tileBase = "rounded-[--radius-card] bg-elevated border p-3 text-center";
+const tileBase = "rounded-card bg-elevated border p-3 text-center";
 const tile = `${tileBase} border-border`;
 
 function Value({ value, highlight = false }: { value: number | null; highlight?: boolean }) {

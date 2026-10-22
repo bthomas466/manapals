@@ -12,7 +12,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-page/70">
-      <div className="w-full max-w-md rounded-t-[--radius-card] bg-surface border-t border-border p-5 pb-8 space-y-4">
+      <div className="w-full max-w-md rounded-t-card bg-surface border-t border-border p-5 pb-8 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">Import Collection</h2>
           <button
@@ -28,7 +28,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             <p className="text-sm text-text-secondary">
               Export your collection from Manabox as a CSV, then upload it here.
             </p>
-            <details className="rounded-[--radius-chip] border border-border bg-elevated p-3">
+            <details className="rounded-chip border border-border bg-elevated p-3">
               <summary className="cursor-pointer text-sm font-semibold text-text-primary">
                 How to export from Manabox
               </summary>
@@ -48,7 +48,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-btn bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Choose CSV file
             </button>
@@ -57,7 +57,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
 
         {step.kind === "error" && (
           <div className="space-y-3">
-            <div className="rounded-[--radius-chip] border border-border bg-elevated p-3 space-y-1">
+            <div className="rounded-chip border border-border bg-elevated p-3 space-y-1">
               {step.messages.map((message, i) => (
                 <p key={i} className="text-sm text-text-secondary">
                   {message}
@@ -66,7 +66,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             </div>
             <button
               onClick={() => reset()}
-              className="min-h-11 w-full rounded-[--radius-btn] border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
+              className="min-h-11 w-full rounded-btn border border-border bg-elevated py-3 text-sm font-semibold text-text-secondary"
             >
               Try another file
             </button>
@@ -83,7 +83,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             </p>
             <button
               onClick={() => confirm(step.rows)}
-              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-btn bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Replace collection
             </button>
@@ -103,7 +103,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
               {step.imported === 1 ? "" : "s"}.
             </p>
             {step.unmatched.length > 0 && (
-              <div className="rounded-[--radius-chip] border border-border bg-elevated p-3 space-y-1 max-h-40 overflow-y-auto">
+              <div className="rounded-chip border border-border bg-elevated p-3 space-y-1 max-h-40 overflow-y-auto">
                 <p className="text-xs font-semibold text-text-secondary">
                   {`${step.unmatched.length} card${step.unmatched.length === 1 ? "" : "s"} couldn't be matched:`}
                 </p>
@@ -116,7 +116,7 @@ export default function ImportCollectionModal({ onClose }: { onClose: () => void
             )}
             <button
               onClick={onClose}
-              className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="min-h-11 w-full rounded-btn bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Done
             </button>

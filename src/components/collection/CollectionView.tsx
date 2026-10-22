@@ -99,13 +99,13 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
           <div className="flex shrink-0 gap-2">
             <button
               onClick={() => setShowSettings(true)}
-              className="rounded-[--radius-btn] border border-border bg-elevated px-3 py-2 text-xs font-semibold text-text-secondary"
+              className="rounded-btn border border-border bg-elevated px-3 py-2 text-xs font-semibold text-text-secondary"
             >
               Trade settings
             </button>
             <button
               onClick={() => setShowImport(true)}
-              className="rounded-[--radius-btn] border border-border bg-elevated px-3 py-2 text-xs font-semibold text-text-secondary"
+              className="rounded-btn border border-border bg-elevated px-3 py-2 text-xs font-semibold text-text-secondary"
             >
               Re-import
             </button>
@@ -120,7 +120,7 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
         onSelectItem={(item) => setSelectedId(item.id)}
         emptyState={
           <div className="flex flex-col items-center justify-center pt-16 gap-4 text-center">
-            <div className="w-16 h-16 rounded-[--radius-card] bg-elevated border border-border flex items-center justify-center text-3xl">
+            <div className="w-16 h-16 rounded-card bg-elevated border border-border flex items-center justify-center text-3xl">
               📦
             </div>
             <div className="space-y-1">
@@ -131,7 +131,7 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
             </div>
             <button
               onClick={() => setShowImport(true)}
-              className="rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+              className="rounded-btn bg-amber px-5 py-3 text-sm font-bold text-page"
             >
               Import Collection
             </button>
@@ -154,7 +154,7 @@ export default function CollectionView({ initialItems }: { initialItems: Collect
 
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[80] flex justify-center px-4">
         {toast && (
-          <p className="rounded-[--radius-btn] border border-border bg-elevated px-4 py-3 text-sm font-semibold text-text-primary shadow-lg">
+          <p className="rounded-btn border border-border bg-elevated px-4 py-3 text-sm font-semibold text-text-primary shadow-lg">
             {toast}
           </p>
         )}

@@ -7,9 +7,9 @@ import FieldError from "@/components/ui/FieldError";
 import ManaboxInstructions from "./ManaboxInstructions";
 
 const primaryBtn =
-  "min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 text-sm font-bold text-page disabled:opacity-50";
+  "min-h-11 w-full rounded-btn bg-amber px-5 text-sm font-bold text-page disabled:opacity-50";
 const secondaryBtn =
-  "min-h-11 w-full rounded-[--radius-btn] border border-border bg-elevated px-5 text-sm font-semibold text-text-secondary";
+  "min-h-11 w-full rounded-btn border border-border bg-elevated px-5 text-sm font-semibold text-text-secondary";
 
 export default function ImportStep({
   hasExistingCards,
@@ -72,7 +72,7 @@ export default function ImportStep({
 
       {step.kind === "error" && (
         <div className="space-y-3">
-          <div className="space-y-1 rounded-[--radius-chip] border border-border bg-elevated p-3">
+          <div className="space-y-1 rounded-chip border border-border bg-elevated p-3">
             {step.messages.map((message, i) => (
               <p key={i} className="text-sm text-text-secondary">
                 {message}
@@ -120,7 +120,7 @@ export default function ImportStep({
             {step.imported === 1 ? "" : "s"}.
           </p>
           {step.unmatched.length > 0 && (
-            <div className="max-h-40 space-y-1 overflow-y-auto rounded-[--radius-chip] border border-border bg-elevated p-3">
+            <div className="max-h-40 space-y-1 overflow-y-auto rounded-chip border border-border bg-elevated p-3">
               <p className="text-xs font-semibold text-text-secondary">
                 {`${step.unmatched.length} card${step.unmatched.length === 1 ? "" : "s"} couldn't be matched:`}
               </p>

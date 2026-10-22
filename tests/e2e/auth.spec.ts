@@ -14,6 +14,14 @@ test.describe("signed out", () => {
     await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   });
 
+  test("AC-3: Continue with Google button renders the 12px button radius", async ({ page }) => {
+    await page.goto("/sign-in");
+    const button = page.getByRole("button", { name: "Continue with Google" });
+    await expect(button).toBeVisible();
+    const radius = await button.evaluate((el) => getComputedStyle(el).borderRadius);
+    expect(radius).toBe("12px");
+  });
+
   test("sign-in page visual", async ({ page }) => {
     await page.goto("/sign-in");
     await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();

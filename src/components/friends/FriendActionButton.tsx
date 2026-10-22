@@ -52,7 +52,7 @@ export default function FriendActionButton({
     return (
       <Wrapper error={error}>
         <div className="flex flex-wrap justify-center gap-2">
-          <span className="inline-flex min-h-11 items-center rounded-[--radius-chip] border border-border bg-elevated px-3 text-sm font-semibold text-text-secondary">
+          <span className="inline-flex min-h-11 items-center rounded-chip border border-border bg-elevated px-3 text-sm font-semibold text-text-secondary">
             Friends ✓
           </span>
           <button
@@ -62,7 +62,7 @@ export default function FriendActionButton({
               setConfirmError(null);
               setConfirmOpen(true);
             }}
-            className="min-h-11 rounded-[--radius-btn] border border-border bg-elevated px-4 text-sm font-semibold text-text-secondary"
+            className="min-h-11 rounded-btn border border-border bg-elevated px-4 text-sm font-semibold text-text-secondary"
           >
             Remove friend
           </button>
@@ -92,7 +92,7 @@ export default function FriendActionButton({
         <button
           disabled={pending}
           onClick={() => run(() => removeFriendship(friendshipId))}
-          className="min-h-11 rounded-[--radius-btn] border border-border bg-elevated px-4 py-2 text-sm font-semibold text-text-secondary disabled:opacity-50"
+          className="min-h-11 rounded-btn border border-border bg-elevated px-4 py-2 text-sm font-semibold text-text-secondary disabled:opacity-50"
         >
           Request Sent · Cancel
         </button>
@@ -107,14 +107,14 @@ export default function FriendActionButton({
           <button
             disabled={pending}
             onClick={() => run(() => respondToFriendRequest(friendshipId, true))}
-            className="min-h-11 rounded-[--radius-btn] bg-amber px-4 py-2 text-sm font-bold text-page disabled:opacity-50"
+            className="min-h-11 rounded-btn bg-amber px-4 py-2 text-sm font-bold text-page disabled:opacity-50"
           >
             Accept Request
           </button>
           <button
             disabled={pending}
             onClick={() => run(() => respondToFriendRequest(friendshipId, false))}
-            className="min-h-11 min-w-11 rounded-[--radius-btn] border border-border bg-elevated px-4 py-2 text-sm font-semibold text-text-secondary disabled:opacity-50"
+            className="min-h-11 min-w-11 rounded-btn border border-border bg-elevated px-4 py-2 text-sm font-semibold text-text-secondary disabled:opacity-50"
           >
             Decline
           </button>
@@ -128,7 +128,7 @@ export default function FriendActionButton({
       <button
         disabled={pending}
         onClick={() => run(() => sendFriendRequest(targetUserId))}
-        className="min-h-11 rounded-[--radius-btn] bg-amber px-5 py-2.5 text-sm font-bold text-page disabled:opacity-50"
+        className="min-h-11 rounded-btn bg-amber px-5 py-2.5 text-sm font-bold text-page disabled:opacity-50"
       >
         Add Friend
       </button>

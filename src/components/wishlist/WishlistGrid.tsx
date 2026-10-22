@@ -29,7 +29,7 @@ function WishlistTile({ item, editable }: { item: WishlistItem; editable: boolea
   const image = card.image_small ?? card.image_normal;
 
   return (
-    <div className="relative aspect-[5/7] rounded-[--radius-chip] bg-elevated border border-border overflow-hidden">
+    <div className="relative aspect-[5/7] rounded-chip bg-elevated border border-border overflow-hidden">
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image} alt={card.name} className="w-full h-full object-cover" loading="lazy" />

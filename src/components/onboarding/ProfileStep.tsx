@@ -7,7 +7,7 @@ import FieldError from "@/components/ui/FieldError";
 import type { WizardProfile } from "./OnboardingWizard";
 
 const inputClass =
-  "min-h-11 w-full rounded-[--radius-chip] border border-border bg-elevated px-3 text-base text-text-primary";
+  "min-h-11 w-full rounded-chip border border-border bg-elevated px-3 text-base text-text-primary";
 
 export default function ProfileStep({
   initial,
@@ -52,7 +52,7 @@ export default function ProfileStep({
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[--radius-avatar] border border-border bg-elevated text-2xl">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-avatar border border-border bg-elevated text-2xl">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="Your profile photo" className="h-full w-full object-cover" />
@@ -90,7 +90,7 @@ export default function ProfileStep({
         <label htmlFor="username" className="text-sm font-semibold text-text-secondary">
           Username
         </label>
-        <div className="focus-ring-within flex min-h-11 items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3">
+        <div className="focus-ring-within flex min-h-11 items-center gap-1 rounded-chip border border-border bg-elevated px-3">
           <span className="text-base text-text-secondary">@</span>
           <input
             id="username"
@@ -114,7 +114,7 @@ export default function ProfileStep({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 w-full rounded-[--radius-btn] bg-amber px-5 text-sm font-bold text-page disabled:opacity-50"
+        className="min-h-11 w-full rounded-btn bg-amber px-5 text-sm font-bold text-page disabled:opacity-50"
       >
         {pending ? "Saving…" : "Continue"}
       </button>
