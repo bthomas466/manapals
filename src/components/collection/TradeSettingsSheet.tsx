@@ -50,7 +50,7 @@ export default function TradeSettingsSheet({
         role="dialog"
         aria-modal="true"
         aria-label="Trade settings"
-        className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-[--radius-card] bg-surface border-t border-border p-5 pb-8 space-y-4"
+        className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-card bg-surface border-t border-border p-5 pb-8 space-y-4"
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">Trade settings</h2>
@@ -76,7 +76,7 @@ export default function TradeSettingsSheet({
                   key={binder.name}
                   role="group"
                   aria-label={binder.name}
-                  className="rounded-[--radius-card] border border-border bg-elevated p-3 space-y-2"
+                  className="rounded-card border border-border bg-elevated p-3 space-y-2"
                 >
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="font-semibold text-text-primary truncate">{binder.name}</p>
@@ -98,7 +98,7 @@ export default function TradeSettingsSheet({
                             void run(binder.name, binder.itemIds, value);
                           }
                         }}
-                        className="flex-1 min-h-11 rounded-[--radius-btn] border border-border bg-surface px-2 text-xs font-semibold text-text-secondary disabled:opacity-50"
+                        className="flex-1 min-h-11 rounded-btn border border-border bg-surface px-2 text-xs font-semibold text-text-secondary disabled:opacity-50"
                       >
                         {busy === binder.name ? "Saving…" : label}
                       </button>

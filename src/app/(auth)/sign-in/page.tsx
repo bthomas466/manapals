@@ -39,7 +39,7 @@ export default function SignInPage() {
         <div className="space-y-3">
           <button
             onClick={() => signInWithProvider("google")}
-            className="flex w-full items-center justify-center gap-3 rounded-[--radius-btn] bg-elevated border border-border px-4 py-3.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-3 rounded-btn bg-elevated border border-border px-4 py-3.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface active:scale-[0.98]"
           >
             <GoogleIcon />
             Continue with Google

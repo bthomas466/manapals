@@ -56,9 +56,9 @@ export default function ProfileEditForm({
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
         placeholder="Display name"
-        className="w-full rounded-[--radius-chip] border border-border bg-elevated px-3 py-2 text-sm text-text-primary"
+        className="w-full rounded-chip border border-border bg-elevated px-3 py-2 text-sm text-text-primary"
       />
-      <div className="focus-ring-within flex items-center gap-1 rounded-[--radius-chip] border border-border bg-elevated px-3 py-2">
+      <div className="focus-ring-within flex items-center gap-1 rounded-chip border border-border bg-elevated px-3 py-2">
         <span className="text-sm text-text-secondary">@</span>
         <input
           value={username}
@@ -72,14 +72,14 @@ export default function ProfileEditForm({
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 flex-1 rounded-[--radius-btn] bg-amber py-2 text-sm font-bold text-page disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-btn bg-amber py-2 text-sm font-bold text-page disabled:opacity-50"
         >
           Save
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="min-h-11 flex-1 rounded-[--radius-btn] border border-border bg-elevated py-2 text-sm font-semibold text-text-secondary"
+          className="min-h-11 flex-1 rounded-btn border border-border bg-elevated py-2 text-sm font-semibold text-text-secondary"
         >
           Cancel
         </button>

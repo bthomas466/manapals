@@ -21,6 +21,10 @@ export const PALETTE_RE = new RegExp(
   "g"
 );
 export const MUTED_RE = /(?<!placeholder:)(?<![\w-])text-text-muted/g;
+// Tailwind 4 no longer wraps a bare custom property in var() inside [...]:
+// `rounded-[--radius-btn]` compiles to `border-radius: --radius-btn` (invalid).
+// Valid forms: `rounded-btn` (theme utility), `rounded-(--x)`, `rounded-[var(--x)]`.
+export const BARE_VAR_ARBITRARY_RE = /(?<![\w-])(?:[\w-]+:)*[\w-]+-\[--[^\]\s]*\]/g;
 
 describe("guard regexes", () => {
   it("flag palette colors", () => {
@@ -58,6 +62,38 @@ describe("guard regexes", () => {
     expect("placeholder:text-text-muted".match(MUTED_RE)).toBeNull();
     expect("border-text-muted".match(MUTED_RE)).toBeNull();
     expect("text-xs text-text-muted".match(MUTED_RE)).toHaveLength(1);
+  });
+});
+
+describe("bare custom property guard regex", () => {
+  it("AC-7: flags the Tailwind 3 shorthand", () => {
+    for (const bad of [
+      "rounded-[--radius-btn]",
+      "rounded-t-[--radius-card]",
+      "hover:rounded-[--radius-chip]",
+      "p-[--space-4]",
+      "bg-[--brand]",
+    ]) {
+      expect(bad.match(BARE_VAR_ARBITRARY_RE), bad).not.toBeNull();
+    }
+  });
+
+  it("AC-7: reports the whole class including variant prefixes", () => {
+    expect('className="sm:hover:rounded-[--radius-chip] p-2"'.match(BARE_VAR_ARBITRARY_RE)).toEqual([
+      "sm:hover:rounded-[--radius-chip]",
+    ]);
+  });
+
+  it("AC-7: allows valid Tailwind 4 forms", () => {
+    for (const ok of [
+      "rounded-btn",
+      "rounded-[var(--radius-btn)]",
+      "rounded-(--radius-btn)",
+      "w-[calc(100%-1rem)]",
+      "rounded-[12px]",
+    ]) {
+      expect(ok.match(BARE_VAR_ARBITRARY_RE), ok).toBeNull();
+    }
   });
 });
 
@@ -119,5 +155,34 @@ describe("design system guard", () => {
       const text = readFileSync(join(SRC, rel), "utf8");
       expect(text, rel).toMatch(/text-text-muted[^>]*>\s*ManaPals is not affiliated/);
     }
+  });
+
+  it("AC-1: no Tailwind 3 radius classes (-[--radius-) under src/", () => {
+    const hits = files.filter((f) => /-\[--radius-/.test(readFileSync(f, "utf8")));
+    expect(hits.map((f) => relative(SRC, f))).toEqual([]);
+  });
+
+  it("AC-2: each radius theme utility is used at least once", () => {
+    const all = files.map((f) => readFileSync(f, "utf8")).join("\n");
+    for (const cls of ["rounded-card", "rounded-t-card", "rounded-btn", "rounded-chip", "rounded-avatar"]) {
+      const re = new RegExp(`(?<![\\w-])(?:[\\w-]+:)*${cls}(?![\\w-])`);
+      expect(re.test(all), cls).toBe(true);
+    }
+  });
+
+  it("AC-2: the three bottom sheets round their top corners with rounded-t-card", () => {
+    for (const name of ["ImportCollectionModal", "TradeSettingsSheet", "CardTradeSheet"]) {
+      const text = readFileSync(join(SRC, `components/collection/${name}.tsx`), "utf8");
+      expect(text, name).toMatch(/(?<![\w-])rounded-t-card(?![\w-])/);
+    }
+  });
+
+  it("AC-8: no bare custom property inside an arbitrary value under src/", () => {
+    const hits: string[] = [];
+    for (const f of files) {
+      const matches = readFileSync(f, "utf8").match(BARE_VAR_ARBITRARY_RE);
+      if (matches) hits.push(`${relative(SRC, f)}: ${matches.join(", ")}`);
+    }
+    expect(hits).toEqual([]);
   });
 });

@@ -115,7 +115,7 @@ export default function CollectionGrid({
           setBatchesShown(1);
         }}
         placeholder="Search cards..."
-        className="w-full rounded-[--radius-chip] border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
+        className="w-full rounded-chip border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
       />
 
       <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export default function CollectionGrid({
                 setBatchesShown(1);
               }}
               aria-pressed={activeChip === label}
-              className={`shrink-0 rounded-[--radius-chip] border min-h-11 min-w-11 px-3 text-xs font-semibold motion-safe:transition-transform motion-safe:duration-100 motion-safe:active:scale-[0.97] ${
+              className={`shrink-0 rounded-chip border min-h-11 min-w-11 px-3 text-xs font-semibold motion-safe:transition-transform motion-safe:duration-100 motion-safe:active:scale-[0.97] ${
                 activeChip === label
                   ? "border-amber bg-amber text-page"
                   : "border-border bg-elevated text-text-secondary"
@@ -146,7 +146,7 @@ export default function CollectionGrid({
             setBatchesShown(1);
           }}
           aria-label="Sort cards"
-          className="min-h-11 shrink-0 rounded-[--radius-chip] border border-border bg-elevated px-2 py-1.5 text-xs font-semibold text-text-secondary"
+          className="min-h-11 shrink-0 rounded-chip border border-border bg-elevated px-2 py-1.5 text-xs font-semibold text-text-secondary"
         >
           <option value="name">Name</option>
           <option value="set">Set</option>
@@ -171,7 +171,7 @@ export default function CollectionGrid({
             <button
               type="button"
               onClick={() => setBatchesShown((b) => b + 1)}
-              className="min-h-12 w-full rounded-[--radius-btn] border border-border bg-elevated text-sm font-semibold text-text-secondary"
+              className="min-h-12 w-full rounded-btn border border-border bg-elevated text-sm font-semibold text-text-secondary"
             >
               Show more
             </button>
@@ -199,7 +199,7 @@ function CardTile({
   const image = card.image_small ?? card.image_normal;
 
   return (
-    <div className="relative aspect-[5/7] rounded-[--radius-chip] bg-elevated border border-border overflow-hidden">
+    <div className="relative aspect-[5/7] rounded-chip bg-elevated border border-border overflow-hidden">
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

@@ -24,7 +24,7 @@ export default async function TradesPage() {
 
       {friends.length === 0 ? (
         <div className="flex flex-col items-center justify-center pt-16 gap-4 text-center">
-          <div className="w-16 h-16 rounded-[--radius-card] bg-elevated border border-border flex items-center justify-center text-3xl">
+          <div className="w-16 h-16 rounded-card bg-elevated border border-border flex items-center justify-center text-3xl">
             🤝
           </div>
           <div className="space-y-1">
@@ -35,7 +35,7 @@ export default async function TradesPage() {
           </div>
           <Link
             href="/profile"
-            className="rounded-[--radius-btn] bg-amber px-5 py-3 text-sm font-bold text-page"
+            className="rounded-btn bg-amber px-5 py-3 text-sm font-bold text-page"
           >
             Find Friends
           </Link>
@@ -46,9 +46,9 @@ export default async function TradesPage() {
             <Link
               key={friend.friendshipId}
               href={`/trades/${friend.username}`}
-              className="flex items-center gap-3 rounded-[--radius-card] bg-elevated border border-border p-3"
+              className="flex items-center gap-3 rounded-card bg-elevated border border-border p-3"
             >
-              <div className="w-10 h-10 rounded-[--radius-avatar] bg-surface border border-border overflow-hidden flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-avatar bg-surface border border-border overflow-hidden flex items-center justify-center text-lg shrink-0">
                 {friend.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={friend.avatar_url} alt="" className="w-full h-full object-cover" />

@@ -71,7 +71,7 @@ export default function CardTradeSheet({
         role="dialog"
         aria-modal="true"
         aria-label={`Trade status for ${card.name}`}
-        className="w-full max-w-md rounded-t-[--radius-card] bg-surface border-t border-border p-5 pb-8 space-y-4"
+        className="w-full max-w-md rounded-t-card bg-surface border-t border-border p-5 pb-8 space-y-4"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -100,7 +100,7 @@ export default function CardTradeSheet({
                 aria-checked={checked}
                 disabled={isPending}
                 onClick={() => choose(value)}
-                className={`w-full min-h-11 rounded-[--radius-btn] border px-4 text-left text-sm font-semibold disabled:opacity-60 ${
+                className={`w-full min-h-11 rounded-btn border px-4 text-left text-sm font-semibold disabled:opacity-60 ${
                   checked
                     ? "border-amber bg-amber/15 text-text-primary"
                     : "border-border bg-elevated text-text-secondary"

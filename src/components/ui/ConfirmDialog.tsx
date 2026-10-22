@@ -70,7 +70,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        className="w-full max-w-sm space-y-4 rounded-[--radius-card] border border-border bg-surface p-5 motion-safe:animate-[dlgin_150ms_ease-out]"
+        className="w-full max-w-sm space-y-4 rounded-card border border-border bg-surface p-5 motion-safe:animate-[dlgin_150ms_ease-out]"
       >
         <h2 id={titleId} className="text-base font-bold text-text-primary">
           {title}
@@ -85,7 +85,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="min-h-11 min-w-11 flex-1 rounded-[--radius-btn] border border-border bg-elevated disabled:opacity-50 text-sm font-semibold text-text-secondary"
+            className="min-h-11 min-w-11 flex-1 rounded-btn border border-border bg-elevated disabled:opacity-50 text-sm font-semibold text-text-secondary"
           >
             Cancel
           </button>
@@ -93,7 +93,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="min-h-11 min-w-11 flex-1 rounded-[--radius-btn] bg-amber text-sm font-bold text-page disabled:opacity-50"
+            className="min-h-11 min-w-11 flex-1 rounded-btn bg-amber text-sm font-bold text-page disabled:opacity-50"
           >
             {pending && pendingLabel ? pendingLabel : confirmLabel}
           </button>

@@ -24,14 +24,14 @@ export function IncomingRequestActions({ friendshipId }: { friendshipId: number 
         <button
           disabled={pending}
           onClick={() => respond(true)}
-          className="min-h-11 min-w-11 rounded-[--radius-chip] bg-amber px-3 py-1.5 text-xs font-bold text-page disabled:opacity-50"
+          className="min-h-11 min-w-11 rounded-chip bg-amber px-3 py-1.5 text-xs font-bold text-page disabled:opacity-50"
         >
           Accept
         </button>
         <button
           disabled={pending}
           onClick={() => respond(false)}
-          className="min-h-11 min-w-11 rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
+          className="min-h-11 min-w-11 rounded-chip border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
         >
           Decline
         </button>
@@ -59,7 +59,7 @@ export function OutgoingRequestActions({ friendshipId }: { friendshipId: number 
       <button
         disabled={pending}
         onClick={cancel}
-        className="min-h-11 min-w-11 rounded-[--radius-chip] border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
+        className="min-h-11 min-w-11 rounded-chip border border-border bg-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary disabled:opacity-50"
       >
         Cancel
       </button>

@@ -63,7 +63,7 @@ export default async function PublicProfilePage({
   return (
     <div className="px-4 pt-6 space-y-6 pb-4">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="w-20 h-20 rounded-[--radius-avatar] bg-elevated border border-border overflow-hidden flex items-center justify-center text-3xl shrink-0">
+        <div className="w-20 h-20 rounded-avatar bg-elevated border border-border overflow-hidden flex items-center justify-center text-3xl shrink-0">
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -96,7 +96,7 @@ export default async function PublicProfilePage({
         />
       ) : (
         <div className="flex flex-col items-center justify-center pt-12 gap-3 text-center">
-          <div className="w-16 h-16 rounded-[--radius-card] bg-elevated border border-border flex items-center justify-center text-3xl">
+          <div className="w-16 h-16 rounded-card bg-elevated border border-border flex items-center justify-center text-3xl">
             🔒
           </div>
           <p className="font-semibold text-text-primary">Only friends can see this collection</p>

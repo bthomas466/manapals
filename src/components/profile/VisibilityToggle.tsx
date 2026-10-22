@@ -35,7 +35,7 @@ export default function VisibilityToggle({ initialVisibility }: { initialVisibil
             key={option}
             disabled={pending}
             onClick={() => choose(option)}
-            className={`min-h-11 flex-1 rounded-[--radius-chip] border px-3 py-2 text-xs font-semibold disabled:opacity-50 ${
+            className={`min-h-11 flex-1 rounded-chip border px-3 py-2 text-xs font-semibold disabled:opacity-50 ${
               visibility === option
                 ? "border-amber bg-amber text-page"
                 : "border-border bg-elevated text-text-secondary"

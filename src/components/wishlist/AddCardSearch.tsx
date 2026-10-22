@@ -73,7 +73,7 @@ export default function AddCardSearch() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-[--radius-chip] bg-amber px-3 py-2 text-xs font-bold text-page"
+        className="rounded-chip bg-amber px-3 py-2 text-xs font-bold text-page"
       >
         + Add Card
       </button>
@@ -84,7 +84,7 @@ export default function AddCardSearch() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-page/70 px-4 pb-4 sm:pb-0">
-      <div className="w-full max-w-sm rounded-[--radius-card] bg-page border border-border p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+      <div className="w-full max-w-sm rounded-card bg-page border border-border p-4 space-y-3 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="font-bold text-text-primary">Add to wishlist</p>
           <button
@@ -104,11 +104,11 @@ export default function AddCardSearch() {
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Card name..."
-          className="w-full rounded-[--radius-chip] border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
+          className="w-full rounded-chip border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
         />
 
         {names.length > 0 && (
-          <ul className="divide-y divide-border rounded-[--radius-chip] border border-border">
+          <ul className="divide-y divide-border rounded-chip border border-border">
             {/* No overflow-hidden on this list: it would clip the focus ring on the name buttons. */}
             {names.map((name) => (
               <li key={name}>
@@ -131,7 +131,7 @@ export default function AddCardSearch() {
               <button
                 disabled={pending}
                 onClick={() => add(printings[0], "any_printing")}
-                className="w-full rounded-[--radius-chip] border border-amber bg-amber/10 px-3 py-2 text-left text-sm font-semibold text-text-primary disabled:opacity-50"
+                className="w-full rounded-chip border border-amber bg-amber/10 px-3 py-2 text-left text-sm font-semibold text-text-primary disabled:opacity-50"
               >
                 Any printing of {selectedName}
               </button>
@@ -145,7 +145,7 @@ export default function AddCardSearch() {
                     <button
                       disabled={pending}
                       onClick={() => add(card, "specific")}
-                      className="flex w-full items-center gap-2 rounded-[--radius-chip] border border-border bg-elevated px-3 py-2 text-left disabled:opacity-50"
+                      className="flex w-full items-center gap-2 rounded-chip border border-border bg-elevated px-3 py-2 text-left disabled:opacity-50"
                     >
                       {image && (
                         // eslint-disable-next-line @next/next/no-img-element

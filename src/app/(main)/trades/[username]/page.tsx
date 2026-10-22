@@ -67,7 +67,7 @@ export default async function TradeMatchPage({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-[--radius-avatar] bg-elevated border border-border overflow-hidden flex items-center justify-center text-xl shrink-0">
+        <div className="w-12 h-12 rounded-avatar bg-elevated border border-border overflow-hidden flex items-center justify-center text-xl shrink-0">
           {friendProfile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={friendProfile.avatar_url} alt="" className="w-full h-full object-cover" />

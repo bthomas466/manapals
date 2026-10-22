@@ -34,12 +34,12 @@ export default function FriendSearchBox() {
             setNotFound(false);
           }}
           placeholder="Find a friend by username"
-          className="flex-1 rounded-[--radius-chip] border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
+          className="flex-1 rounded-chip border border-border bg-elevated px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted"
         />
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 min-w-11 shrink-0 rounded-[--radius-chip] bg-amber px-4 py-2.5 text-sm font-bold text-page disabled:opacity-50"
+          className="min-h-11 min-w-11 shrink-0 rounded-chip bg-amber px-4 py-2.5 text-sm font-bold text-page disabled:opacity-50"
         >
           Go
         </button>

@@ -8,7 +8,7 @@ export default function CollectionSummary({ summary }: { summary: Summary }) {
     <section
       role="region"
       aria-label="Collection summary"
-      className="rounded-[--radius-card] border border-border bg-elevated px-4 py-3"
+      className="rounded-card border border-border bg-elevated px-4 py-3"
     >
       <p className="text-sm text-text-secondary">
         <span className="font-bold text-text-primary">{f.cards}</span>
