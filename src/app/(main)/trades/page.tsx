@@ -60,7 +60,7 @@ export default async function TradesPage() {
                 <p className="text-sm font-semibold text-text-primary truncate">
                   {friend.display_name}
                 </p>
-                <p className="text-xs text-text-muted truncate">@{friend.username}</p>
+                <p className="text-xs text-text-secondary truncate">@{friend.username}</p>
               </div>
               <span className="text-xs font-semibold text-amber shrink-0">View Matches</span>
             </Link>

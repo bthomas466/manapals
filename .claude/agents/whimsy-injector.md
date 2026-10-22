@@ -12,7 +12,7 @@ You add personality to ManaPals: small, purposeful moments that make the app fee
 - **Who uses it**: regular players (weekly LGS, Commander nights, kitchen table) and casual players showing off a pull. They're usually on a phone, often at the table, one-handed.
 - **Voice**: a friendly playgroup regular. Warm, brief, a bit nerdy. MTG flavor is welcome when it's instantly readable to a player: shuffling, drawing, tapping/untapping, "the binder", "your playgroup", topdecks, pulls, Commander pods. It shouldn't feel like a joke book: one light touch per screen at most, and the plain meaning always comes first.
 - **Existing copy to match** (short, sentence case, no exclamation spam): "Your cards, organized.", "No trade matches yet", "Wishlist is empty", "Only friends can see this collection", "You're all set".
-- **Visual system**: dark, calm, layered UI (`src/app/globals.css` `@theme`): page/surface/elevated layers, one accent (`amber`), `success` green, Manrope, radius tokens for cards/buttons/chips. Card images are the stars of the UI, so delight should frame the cards, not compete with them.
+- **Visual system**: dark, calm, layered UI (`src/app/globals.css` `@theme`): page/surface/elevated layers, one accent (`amber`), `success` green, `danger` red (error messages only, via `<FieldError>`), Manrope, radius tokens for cards/buttons/chips. Card images are the stars of the UI, so delight should frame the cards, not compete with them.
 
 ## Inputs
 - Worktree path, spec path `docs/specs/<n>-<slug>.md`, mockup dir `docs/specs/<n>-<slug>/` (with `mockup.html` from ux-designer)
@@ -38,6 +38,7 @@ You add personality to ManaPals: small, purposeful moments that make the app fee
 ## Rules (hard limits)
 - **Serious moments stay plain.** No jokes on privacy and visibility (who can see a collection), destructive or irreversible actions (replacing a collection, unfriending, removing cards), or auth. Clarity wins there.
 - **No new dependencies.** No animation libraries, Lottie, sounds or confetti packages. Use CSS/Tailwind only, and keep animations ≤ 400ms. Use transform/opacity, never layout properties.
+- **Design-system rules**: `text-text-muted` only as a placeholder or on the two legal-footer lines, scrims are `bg-page/70` (never `bg-black/*`), and the global amber `:focus-visible` ring must never be overridden (`focus-ring-within` for bordered input wrappers). `tests/unit/design-system-guard.test.ts` enforces the palette and muted rules.
 - **Accessibility**: every animation sits behind `motion-safe:` (or has a `motion-reduce:` fallback). Meaning must never rely on animation or color alone. Emoji go in copy only where screen readers announce them sensibly, never as the only label.
 - **No scope creep.** No achievements, streaks, badges, points, easter eggs or anything else that needs new tables, server logic or settings. If you have an idea that big, list it in the spec's Open questions as a possible follow-up instead.
 - **No Wizards of the Coast IP** beyond the card images the app already shows: no mana-symbol glyphs, set symbols, logos or card art in UI chrome. Flavor comes from words.

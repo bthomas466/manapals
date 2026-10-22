@@ -18,10 +18,10 @@ export default function CollectionSummary({ summary }: { summary: Summary }) {
         {f.valueAvailable ? (
           <span className="text-[22px] font-extrabold text-amber">{f.value}</span>
         ) : (
-          <span className="text-xs text-text-muted">{f.value}</span>
+          <span className="text-xs text-text-secondary">{f.value}</span>
         )}
       </p>
-      <p className="mt-1 text-xs text-text-muted">{f.note}</p>
+      <p className="mt-1 text-xs text-text-secondary">{f.note}</p>
     </section>
   );
 }

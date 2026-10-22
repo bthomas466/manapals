@@ -119,7 +119,8 @@ export default function CollectionGrid({
       />
 
       <div className="flex items-center gap-2">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 flex-1">
+        {/* p-1/-m-1: padding keeps the focus ring from being clipped by overflow-x-auto. */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar p-1 -m-1 flex-1">
           {[...COLOR_CHIPS.map((c) => c.label), ...(tradeEnabled ? TRADE_CHIPS : [])].map((label) => (
             <button
               key={label}
@@ -128,9 +129,7 @@ export default function CollectionGrid({
                 setBatchesShown(1);
               }}
               aria-pressed={activeChip === label}
-              className={`shrink-0 rounded-[--radius-chip] border px-3 text-xs font-semibold ${
-                tradeEnabled ? "min-h-11" : "py-1.5"
-              } ${
+              className={`shrink-0 rounded-[--radius-chip] border min-h-11 min-w-11 px-3 text-xs font-semibold motion-safe:transition-transform motion-safe:duration-100 motion-safe:active:scale-[0.97] ${
                 activeChip === label
                   ? "border-amber bg-amber text-page"
                   : "border-border bg-elevated text-text-secondary"
@@ -146,7 +145,8 @@ export default function CollectionGrid({
             setSortKey(e.target.value as SortKey);
             setBatchesShown(1);
           }}
-          className="shrink-0 rounded-[--radius-chip] border border-border bg-elevated px-2 py-1.5 text-xs font-semibold text-text-secondary"
+          aria-label="Sort cards"
+          className="min-h-11 shrink-0 rounded-[--radius-chip] border border-border bg-elevated px-2 py-1.5 text-xs font-semibold text-text-secondary"
         >
           <option value="name">Name</option>
           <option value="set">Set</option>
@@ -165,7 +165,7 @@ export default function CollectionGrid({
         <>
           <div ref={sentinelRef} aria-hidden="true" />
           <div className="space-y-2">
-            <p className="text-xs text-text-muted text-center">
+            <p className="text-xs text-text-secondary text-center">
               Showing {visibleCount} of {matches.length}
             </p>
             <button
@@ -180,7 +180,7 @@ export default function CollectionGrid({
       )}
 
       {matches.length === 0 && (
-        <p className="text-sm text-text-muted text-center pt-8">No cards match your filters.</p>
+        <p className="text-sm text-text-secondary text-center pt-8">No cards match your filters. Try clearing a color.</p>
       )}
     </>
   );

@@ -15,6 +15,7 @@
 
   /* Status */
   --color-success: oklch(70% 0.15 145);
+  --color-danger: oklch(68% 0.18 25);
 
   /* Text */
   --color-text-primary: oklch(96% 0.005 90);
@@ -31,6 +32,22 @@
   --radius-avatar: 9999px;
 }
 
+/* Unlayered, so it beats utilities such as outline-none. */
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+/* Bordered input wrappers: ring on the wrapper, not the inner input. */
+.focus-ring-within:has(:focus-visible) {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+.focus-ring-within :focus-visible {
+  outline: none;
+}
+
 body {
   background-color: oklch(13% 0.01 260);
   color: oklch(96% 0.005 90);
@@ -40,5 +57,25 @@ body {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+@keyframes dlgin {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes scrimin {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes errin {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
   }
 }

@@ -27,7 +27,7 @@ export default function MainError({
         <button
           type="button"
           onClick={() => unstable_retry()}
-          className="min-h-11 w-full rounded-[--radius-btn] border border-border bg-elevated text-sm font-semibold text-text-secondary transition-colors active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
+          className="min-h-11 w-full rounded-[--radius-btn] border border-border bg-elevated text-sm font-semibold text-text-secondary transition-colors active:scale-[0.98]"
         >
           Try again
         </button>

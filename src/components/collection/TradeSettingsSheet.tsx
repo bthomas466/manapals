@@ -45,7 +45,7 @@ export default function TradeSettingsSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-page/70">
       <div
         role="dialog"
         aria-modal="true"
@@ -57,7 +57,7 @@ export default function TradeSettingsSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 px-2 text-sm font-semibold text-text-muted"
+            className="min-h-11 px-2 text-sm font-semibold text-text-secondary"
           >
             Close
           </button>
@@ -80,7 +80,7 @@ export default function TradeSettingsSheet({
                 >
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="font-semibold text-text-primary truncate">{binder.name}</p>
-                    <p className="shrink-0 text-xs text-text-muted">
+                    <p className="shrink-0 text-xs text-text-secondary">
                       {binder.rows} {binder.rows === 1 ? "entry" : "entries"} · {binder.cards}{" "}
                       {binder.cards === 1 ? "card" : "cards"}
                     </p>

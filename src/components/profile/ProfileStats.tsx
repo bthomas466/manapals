@@ -24,7 +24,7 @@ export default function ProfileStats({
         <Link
           href="/collection"
           data-testid="stat-cards"
-          className={`${tileBase} min-h-11 border-amber/30 motion-safe:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber`}
+          className={`${tileBase} min-h-11 border-amber/30 motion-safe:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-100 transition-colors`}
         >
           <Value value={cards} />
           <p className="text-xs text-text-secondary">

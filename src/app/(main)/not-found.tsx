@@ -18,7 +18,7 @@ export default function MainNotFound() {
         </div>
         <Link
           href="/profile"
-          className="inline-flex min-h-11 items-center rounded-[--radius-btn] bg-amber px-5 text-sm font-bold text-page transition-colors active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
+          className="inline-flex min-h-11 items-center rounded-[--radius-btn] bg-amber px-5 text-sm font-bold text-page transition-colors active:scale-[0.98]"
         >
           Find a friend
         </Link>

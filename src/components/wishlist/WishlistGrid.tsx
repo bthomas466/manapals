@@ -49,7 +49,7 @@ function WishlistTile({ item, editable }: { item: WishlistItem; editable: boolea
 
       {editable && (
         <div className="absolute bottom-1 right-1">
-          <WishlistRemoveButton id={item.id} />
+          <WishlistRemoveButton id={item.id} cardName={card.name} />
         </div>
       )}
     </div>

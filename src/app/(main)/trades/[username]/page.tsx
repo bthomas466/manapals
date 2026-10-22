@@ -61,7 +61,7 @@ export default async function TradeMatchPage({
   const header = (
     <>
       <div className="flex items-center gap-3">
-        <Link href="/trades" className="text-sm font-semibold text-text-muted">
+        <Link href="/trades" className="inline-flex min-h-11 min-w-11 items-center text-sm font-semibold text-text-secondary">
           ← Trades
         </Link>
       </div>
@@ -77,7 +77,7 @@ export default async function TradeMatchPage({
         </div>
         <div className="min-w-0">
           <p className="font-bold text-text-primary truncate">Matches with {friendProfile.display_name}</p>
-          <p className="text-sm text-text-muted truncate">@{friendProfile.username}</p>
+          <p className="text-sm text-text-secondary truncate">@{friendProfile.username}</p>
         </div>
       </div>
     </>

@@ -1,5 +1,5 @@
 # Accessibility pass: focus styles, 44px targets, text contrast, danger token
-Issue: #46 · PRD refs: §5.2 (touch targets 44px, no horizontal scroll), §4.5 (users can remove friends), US-15, US-16, US-18, US-22 · Status: Draft
+Issue: #46 · PRD refs: §5.2 (touch targets 44px, no horizontal scroll), §4.5 (users can remove friends), US-15, US-16, US-18, US-22 · Status: Approved
 
 ## Problem
 ManaPals is meant to be used one-handed on a phone at game night (§5.2). Several gaps make it harder to use for keyboard, switch and screen-reader users, and for anyone in a dim room:
@@ -271,3 +271,159 @@ Proposed by whimsy-injector. In scope unless the owner drops them at the spec ga
 Builder notes: D-3 changes an existing string, so check that no test asserts the old text. Keyframes `dlgin` and `errin` go in `globals.css` (about 6 lines).
 
 Left out: a "Friends ✓" flourish, any joke in the remove-friend dialog, and any celebratory touch on focus. Possible follow-up for Open questions: friendly empty-state copy for the wishlist once the last card is removed (needs UX review, outside this pass).
+
+## Decisions (spec gate, 2026-10-22)
+Owner replied `approve` with no changes. Recommended defaults accepted for all open questions:
+1. Remove the three per-element `focus-visible:` classes; global rule is the single source.
+2. Sheet backdrops become `bg-page/70`; guard has no exceptions.
+3. Vitest guard test in `tests/unit/`, no ESLint plugin.
+4. Confirm "Remove" uses the amber confirm style.
+5. E2E covers open/Cancel/Escape only; confirm path is a jsdom unit test.
+6. Add `aria-label="Sort cards"` to the sort select.
+7. Muted only for placeholders and the two legal footer lines.
+8. No split. All Delight items D-1 to D-5 stay in scope.
+
+## Technical design
+
+There is no migration, no new route, and no change to data fetching or caching. All work is presentational, plus one client-side confirm step in front of the existing `removeFriendship` server action. Client components keep the existing `useRouter().refresh()` pattern after a server action (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/use-router.md`). `refresh()` from `next/cache` is for use inside server actions only, so it is not used here.
+
+### Changes
+**Global CSS and tokens**
+- `src/app/globals.css`:
+  - add `--color-danger: oklch(68% 0.18 25);` under `/* Status */`. Measured: 6.43:1 on page, 6.11:1 on surface, 5.54:1 on elevated.
+  - add the **unlayered** focus rules below the `@theme` block. Tailwind 4 emits utilities inside `@layer utilities`, and unlayered rules beat layered ones whatever their specificity, so `outline-none` and `outline-hidden` cannot remove the ring:
+    ```css
+    :focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; }
+    /* Bordered input wrappers: ring on the wrapper, not the inner input (mockup state 3). */
+    .focus-ring-within:has(:focus-visible) { outline: 2px solid var(--color-amber); outline-offset: 2px; }
+    .focus-ring-within :focus-visible { outline: none; }
+    ```
+  - add the keyframes `dlgin` (opacity 0→1, scale .96→1), `scrimin` (opacity 0→1) and `errin` (opacity 0→1, translateY(-2px)→0), next to `settle`.
+
+**New shared code**
+- `src/lib/a11y/contrast.ts` (new, pure):
+  - `parseOklch(s)`, `oklchToSrgb({l,c,h})` (OKLab → linear sRGB, clamped to gamut), `parseHex(s)`, `relativeLuminance(rgbLinear)` and `contrastRatio(a, b)`;
+  - `readThemeColors(css: string): Record<string, string>`, which pulls the `--color-*` values out of the `@theme { … }` block.
+- `src/components/ui/FieldError.tsx` (new): `FieldError({ message }: { message?: string | null })`. It returns `null` for a null or empty message. Otherwise it renders `<p role="alert" className="text-sm text-danger motion-safe:animate-[errin_150ms_ease-out]">` (D-5).
+- `src/components/ui/ConfirmDialog.tsx` (new, client): a generalised version of `FirstAvailableConfirm`'s layout. Props: `title`, `children` (the body), `confirmLabel`, `pendingLabel?`, `pending?`, `error?`, `onConfirm` and `onCancel`.
+  - Renders a scrim (`fixed inset-0 z-[70] bg-page/70 motion-safe:animate-[scrimin_150ms_ease-out]`) and a panel with `role="alertdialog"`, `aria-modal="true"`, and `aria-labelledby`/`aria-describedby` set from `useId()`. The panel has `motion-safe:animate-[dlgin_150ms_ease-out]` (D-4).
+  - Cancel is `flex-1 min-h-11 min-w-11` in the secondary style. Confirm is `flex-1 min-h-11 min-w-11` in amber and is `disabled={pending}`; while pending its label is `pendingLabel`.
+  - `<FieldError message={error} />` sits above the buttons.
+  - On mount it stores `document.activeElement` and focuses Cancel. On unmount it calls `.focus()` on the stored element if that element is still connected.
+  - A `window` keydown `Escape` listener and a scrim click (`e.target === e.currentTarget`) call `onCancel`. Both do nothing while `pending`, so a late result can't land on a closed dialog.
+
+**Confirm dialog consumers**
+- `src/components/collection/FirstAvailableConfirm.tsx`: becomes a thin wrapper around `ConfirmDialog`. Its props, copy and `Confirm` label stay the same. The `bg-black/60` scrim goes away through `ConfirmDialog`. Existing sheets already skip their own Escape handling while a confirm is open, so the two handlers don't conflict.
+- `src/components/friends/FriendActionButton.tsx`:
+  - new required prop `displayName: string`;
+  - in the `friends` state, render a `<span>` chip with "Friends ✓" (`rounded-[--radius-chip] border border-border bg-elevated px-3 inline-flex min-h-11 items-center text-sm font-semibold text-text-secondary`) next to a secondary `<button>` labelled "Remove friend" (`min-h-11`). The two sit in a `flex flex-wrap justify-center gap-2` row;
+  - local `confirmOpen` state. "Remove friend" opens `ConfirmDialog` with the title `Remove ${displayName} as a friend?`, the exact body copy from scope item 5, `confirmLabel="Remove"` and `pendingLabel="Removing…"`;
+  - on confirm, `removeFriendship(friendshipId)` runs in a transition. On error the dialog stays open, `setError`, and `router.refresh` is not called. On success the dialog closes and `router.refresh()` runs;
+  - the other states get `min-h-11` on every button and `min-w-11` on "Decline". `Wrapper` renders `<FieldError message={error} />`. The dialog error and the wrapper error are separate state, so an error is never shown twice.
+- `src/app/(main)/u/[username]/page.tsx`: pass `displayName={profile.display_name}`. The `@username` line becomes `text-text-secondary`.
+
+**FieldError replacements** (eight lines in seven files). Each `text-red-500` `<p>` becomes `<FieldError message={…} />`.
+- `src/components/friends/FriendRequestActions.tsx` (×2). Also: Accept, Decline and Cancel get `min-h-11 min-w-11`. The rows keep `items-end`.
+- `src/components/profile/ProfileEditForm.tsx`. Also:
+  - Edit becomes `inline-flex min-h-11 min-w-11 items-center px-2`;
+  - Save and Cancel become `min-h-11`;
+  - `@username` and the "@" prefix become `text-text-secondary`;
+  - the username wrapper div gets `focus-ring-within`, and the inner input drops `outline-none`.
+- `src/components/profile/VisibilityToggle.tsx`. Also: both options get `min-h-11`.
+- `src/components/onboarding/ProfileStep.tsx`. Also: the wrapper gets `focus-ring-within`, the input drops `outline-none`, and "@" and `/u/{username}` become `text-text-secondary`.
+- `src/components/onboarding/ImportStep.tsx`. Also: "N cards couldn't be matched" and "Skip for now" become `text-text-secondary`.
+- `src/components/wishlist/AddCardSearch.tsx`. Also: the scrim becomes `bg-page/70`, and Close becomes `min-h-11 min-w-11 px-2 text-text-secondary`. "Loading printings..." becomes `text-text-secondary`.
+
+**44px targets and contrast-only edits**
+- `src/components/wishlist/WishlistRemoveButton.tsx`:
+  - new prop `cardName: string`;
+  - the button becomes `flex h-11 w-11 items-end justify-end` with `aria-label={`Remove ${cardName} from wishlist`}`;
+  - the inner visual is `<span aria-hidden="true">` with the old round ✕ classes plus `motion-safe:transition-transform motion-safe:duration-100 motion-safe:group-active:scale-90`, and the button carries `group`. This puts D-1 on the visual only.
+- `src/components/wishlist/WishlistGrid.tsx`: pass `cardName={card.name}`. The anchor stays at `absolute bottom-1 right-1`. That 4px inset is exactly the ring's reach (2px offset + 2px width), so the tile's `overflow-hidden` doesn't clip the ring.
+- `src/components/collection/CollectionGrid.tsx`:
+  - chips always `min-h-11`, dropping the `tradeEnabled ? … : "py-1.5"` branch, plus `motion-safe:transition-transform motion-safe:duration-100 motion-safe:active:scale-[0.97]` (D-2);
+  - the chip scroller changes `pb-1` to `p-1 -m-1`. Its `overflow-x-auto` also clips on the y-axis, so this keeps the ring visible;
+  - the sort select gets `min-h-11` and `aria-label="Sort cards"` (Q6);
+  - "Showing N of M" and the no-results line become `text-text-secondary`;
+  - the no-results copy becomes "No cards match your filters. Try clearing a color." (D-3).
+- `src/components/collection/ImportCollectionModal.tsx`: scrim becomes `bg-page/70`. Cancel becomes `min-h-11 min-w-11 px-2 text-text-secondary` and drops `aria-label="Close"`.
+- `src/components/collection/CardTradeSheet.tsx`: scrim becomes `bg-page/70`, and Close becomes `text-text-secondary`.
+- `src/components/collection/TradeSettingsSheet.tsx`: scrim becomes `bg-page/70`. Close and the counts become `text-text-secondary`.
+- `src/components/collection/CollectionSummary.tsx`: values and note become `text-text-secondary`.
+- `src/components/nav/BottomNav.tsx`: inactive icon and label become `text-text-secondary`.
+- `src/components/onboarding/ManaboxInstructions.tsx`: the tip becomes `text-text-secondary`.
+- `src/components/profile/FriendSearchBox.tsx`: Go becomes `min-h-11 min-w-11`, and "No ManaPal with that username." becomes `text-text-secondary`.
+- `src/app/(main)/profile/page.tsx`: email, both `@username` lines and "Request sent" become `text-text-secondary`. The legal footer stays `text-text-muted`.
+- `src/app/(main)/trades/[username]/page.tsx`: "← Trades" becomes `inline-flex min-h-11 min-w-11 items-center text-text-secondary`, and `@username` becomes `text-text-secondary`.
+- `src/app/(main)/trades/page.tsx`: `@username` becomes `text-text-secondary`.
+- `src/app/(main)/error.tsx`, `src/app/(main)/not-found.tsx`, `src/components/profile/ProfileStats.tsx`: remove the per-element `focus-visible:outline-*` classes (Q1). The global rule now supplies the ring.
+- `src/app/(auth)/sign-in/page.tsx`: no change. The footer stays muted.
+
+**Design-system docs**
+- `.claude/agents/ui-designer.md` and `.claude/agents/whimsy-injector.md`:
+  - add `danger`, for error messages only, through `<FieldError>`;
+  - add the muted rule: `text-text-muted` is allowed only as `placeholder:text-text-muted` and on the two legal-footer lines;
+  - add the global amber `:focus-visible` ring: never override it, and use `focus-ring-within` for bordered input wrappers;
+  - add the scrim rule: `bg-page/70`, never `bg-black/*`;
+  - mention the guard test.
+
+**Tests** (see the Test plan)
+- `tests/unit/contrast.test.ts`
+- `tests/unit/field-error.test.ts`
+- `tests/unit/design-system-guard.test.ts`
+- `tests/unit/hit-targets.test.ts`
+- `tests/unit/friend-remove-confirm.test.ts`
+- `tests/e2e/authed/a11y.spec.ts`
+- `tests/e2e/authed/a11y.serial.spec.ts`
+
+### Schema
+None. No migration and no `db-change` label. The remove path still runs the existing `removeFriendship` server action under the existing `friendships_delete_participant` RLS policy.
+
+### Data flow
+- No new queries. `/u/[username]/page.tsx` (server component) already loads `profile.display_name` and `friendship.id`. It now also passes `displayName` to the client `FriendActionButton`.
+- `FriendActionButton` (client) holds `confirmOpen`, `error` and the `useTransition` pending state. It calls the server action `removeFriendship` (`src/lib/friends/actions.ts`, unchanged) and then `router.refresh()`. The server re-renders the page in the "none" state, and RLS hides the friend's friends-only collection and wishlist.
+- `ConfirmDialog` and `FieldError` are presentational. `ConfirmDialog` is a client component because it uses effects and listeners. `FieldError` has no hooks, so it can render in either environment.
+
+### Logic placement
+- The contrast math and the `@theme` parser live in `src/lib/a11y/contrast.ts`. They are pure and unit-tested. The app never imports them; they back AC-3.
+- The palette and muted-text scanners live in `tests/unit/design-system-guard.test.ts`, not in `src/`. If they lived in `src/`, their own regex sources would be scanned. The test file also checks its regexes against known-good and known-bad strings.
+- Remove-confirm sequencing (no call until confirm, refresh only on success) lives in `FriendActionButton` and is covered by AC-15. It is too small to be worth a separate `src/lib` function.
+
+### Test plan
+Vitest only includes `tests/unit/**/*.test.ts`, so unit tests use `createElement`, not JSX. Component tests that import client components `vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }))` and `vi.mock("@/lib/friends/actions")`, so that server-only modules and the app-router context are never needed.
+
+**E2E token helper.** `getComputedStyle(...).getPropertyValue("--color-amber")` returns the raw `oklch(78% 0.13 80)` string, which never equals a computed `outline-color` or `color`. So the specs use a `resolveToken(page, name)` helper. It appends a probe element with `style.color = var(--color-x)`, reads its computed `color`, and removes it. Every token comparison goes through this helper.
+
+| AC | Test | File |
+|---|---|---|
+| AC-1 | Visit `/profile`, `/collection`, `/wishlist` and `/u/e2e_friend`. On each page, press Tab up to 80 times until focus returns to an element already seen or to `body`. For each `document.activeElement`, assert `outline-style: solid`, `outline-width: 2px`, `outline-offset: 2px` and `outline-color === resolveToken("amber")`. On `/profile`, tap Edit, focus the display-name input and press Tab into the username input. Then assert the input or its `.focus-ring-within` parent has the amber 2px solid outline. | E2E `a11y.spec.ts` |
+| AC-2 | On `/profile`, tap "Public" and assert its `outline-style` is `none`. Then tap "Friends only" to restore the seeded value, in a `finally` block or `afterEach`. Kept in a serial spec because it writes `collection_visibility`. | E2E `a11y.serial.spec.ts` |
+| AC-3 | Parse `src/app/globals.css` with `readThemeColors`. Assert `danger` and `text-secondary` are ≥4.5 against page, surface and elevated, and `amber` is ≥3. Assert `contrastRatio(#fff, #000)` is about 21 (`toBeCloseTo(21, 0)`). Also assert `text-muted` on elevated is below 4.5, so the helper is known to fail what it should. | Unit `contrast.test.ts` |
+| AC-4 | `renderToStaticMarkup(FieldError, { message: "Couldn't remove." })` gives a `<p` with `role="alert"`, `text-sm` and `text-danger`, and contains the text. `null` and `""` render `""`. | Unit `field-error.test.ts` |
+| AC-5 | Walk `src/**/*.{ts,tsx,css}`. Fail on any match of the palette regex: a utility prefix (`text`, `bg`, `border(-[trblxy])?`, `ring(-offset)?`, `outline`, `fill`, `stroke`, `from`, `via`, `to`, `divide`, `decoration`, `accent`, `caret`, `shadow`), optionally with a variant before it such as `placeholder:`, followed by `-black`, `-white`, or `-<palette>-<50…950>`, with an optional `/NN`. Use the lookbehind `(?<![\w-])`. The token `amber` without a shade is allowed. Separately, assert no file contains `text-red-500`, and that each of the seven files imports and uses `FieldError`. | Unit `design-system-guard.test.ts` |
+| AC-6 | On `/profile`, tap Edit, clear the display name and tap Save. The `getByRole("alert")` text is "Display name is required." (`DISPLAY_NAME_REQUIRED`). Assert its computed `color === resolveToken("danger")` and `font-size: 14px`. The server action validates before writing, so no data changes. | E2E `a11y.spec.ts` |
+| AC-7 | `boundingBox()` is at least 44×44 for every element in the AC list. On `/collection`, chips are located by `aria-pressed` buttons in the chip row, and the select by `getByRole("combobox", { name: "Sort cards" })`. For the Add-to-wishlist Close, open the sheet with "Add card" first. | E2E `a11y.spec.ts` |
+| AC-8 | Use `renderToStaticMarkup` for `IncomingRequestActions`, `OutgoingRequestActions`, `FriendActionButton` (status `incoming` and `outgoing`, `friendshipId: 1`) and `ImportCollectionModal`. Every `<button[^>]*>` has `min-h-11`. Buttons whose text is Accept, Decline or Cancel also have `min-w-11`. `ImportCollectionModal` needs `useCollectionImport` to render the `pick` step, which it does by default. | Unit `hit-targets.test.ts` |
+| AC-9 | On `/wishlist`, both named remove buttons are visible, and `getByRole("button", { name: "✕", exact: true })` has count 0. | E2E `a11y.spec.ts` |
+| AC-10 | Walk `src/**/*.tsx`. For each match of `text-text-muted` that isn't preceded by `placeholder:`, the file must be `src/app/(main)/profile/page.tsx` or `src/app/(auth)/sign-in/page.tsx`, and the count per file must be at most 1. The test also asserts that in those two files the muted `<p>` contains "is not affiliated". Note that `border-text-muted` in `CollectionGrid` does not match `text-text-muted`. | Unit `design-system-guard.test.ts` |
+| AC-11 | Compare computed `color` with `resolveToken`. On `/profile`, use the friends-list "@e2e_friend" (scoped to the Friends section). On `/u/e2e_friend`, use "@e2e_friend". The bottom-nav "Collection" label is checked from `/profile`, where it is inactive. The legal footer is compared with `text-muted`. | E2E `a11y.spec.ts` |
+| AC-12 | `test.use({ viewport: { width: 375, height: 800 } })`. On the four pages, `scrollWidth <= 375`. | E2E `a11y.spec.ts` |
+| AC-13 | On `/u/e2e_friend`, `getByText("Friends ✓")` is visible, `getByRole("button", { name: /^Friends/ })` has count 0, the "Remove friend" button is visible, and `getByText("Friends ✓ · Remove")` has count 0. | E2E `a11y.spec.ts` |
+| AC-14 | Tap "Remove friend". `getByRole("alertdialog", { name: "Remove E2E Friend as a friend?" })` is visible, and Cancel and Remove are each at least 44 tall. `document.activeElement` is inside the dialog (it is Cancel). Tap Cancel: the dialog is gone, the "Remove friend" button `toBeFocused()`, and "Friends ✓" is visible. Reload: "Friends ✓" is still visible. Reopen and press Escape: the dialog is gone and "Friends ✓" is visible. Never click Remove. | E2E `a11y.spec.ts` |
+| AC-15 | Use `// @vitest-environment jsdom` with `createRoot` and `act`, following `main-error.test.ts`. Render `FriendActionButton` with `status: "friends"`, `friendshipId: 7` and `displayName: "Jonny"`. Click "Remove friend": `removeFriendship` has not been called. Click "Remove": it is called once with `7`, and `refresh` is called. Second case: the mock resolves `{ error: "Couldn't remove." }`. The `[role=alertdialog]` is still present and contains `[role=alert]` with the text, and `refresh` is not called. | Unit `friend-remove-confirm.test.ts` |
+
+- Delight. D-3 is checked by AC-11's page visit plus an existing assertion: `getByText("No cards match your filters.")` in `card-grid-sizing.spec.ts:202` and `trade-flags.serial.spec.ts:309` is a substring match, so it still passes. D-1, D-2, D-4 and D-5 are class-only. The ui-designer stage checks them. No test asserts on animation.
+- Seed data: no changes to `scripts/seed-staging.ts`. Every AC uses existing seed facts: the `e2e_player` ↔ `e2e_friend` friendship, `e2e_stranger` as a non-friend, the two wishlist cards, and `collection_visibility: "friends"`.
+- Screenshot baseline: `sign-in.png` should not change, because the legal footer stays muted and nothing is focused.
+
+### Risks
+- **Privacy and RLS.** There is no schema or policy change. Removal still goes through `removeFriendship` and the existing `friendships_delete_participant` policy. Visibility after removal is still enforced server-side on refresh. The new accessible name only uses the card name, which is already visible. `FieldError` only shows strings the server actions already return.
+- **Accidental friendship deletion in E2E.** If AC-14 ever clicked Remove, it would break the seeded friendship that other authed specs rely on until the next re-seed. The spec must only use Cancel and Escape. The confirm path is unit-only (AC-15).
+- **AC-2 mutates `collection_visibility`.** It runs in `a11y.serial.spec.ts` and restores "Friends only" in `finally`. If the restore fails, the lock-state test in `seeded-data.spec.ts` only covers `e2e_stranger`, so the blast radius is limited to `e2e_player` being public until the next re-seed.
+- **Ring clipping.** An unlayered `:focus-visible` always computes correctly (AC-1), but `overflow` ancestors can clip it visually. Known cases are already handled: the wishlist tile, with its `bottom-1 right-1` inset, and the chip scroller (`p-1 -m-1`). The ui-designer should look at other `overflow-*` containers that hold focusable elements (sheets with `overflow-y-auto`, the import "unmatched" list) at 375px.
+- **Unlayered CSS is deliberately global.** Every element will show the amber ring on keyboard focus, including inputs focused by pointer (browsers match `:focus-visible` on text inputs even when clicked). This is the intended behavior, but it is a visible change on all forms.
+- **FirstAvailableConfirm generalisation.** It gains Escape, backdrop-to-cancel and focus moves. The sheets already skip their own Escape while a confirm is open (`!pendingConfirm` / `!confirm`), so Escape only closes the confirm. `trade-flags.serial.spec.ts` finds it by `getByRole("alertdialog")` and the button names Cancel and Confirm, which are unchanged.
+- **44px targets and layout.** The taller chip row, the Edit row and the request rows add height. The request rows (avatar, name, two buttons at `min-w-11`) need checking at 375px for wrapping. AC-12 covers horizontal overflow only on `/profile`, `/collection`, `/wishlist` and `/u/e2e_friend`.
+- **Guard false positives.** The palette regex must not flag `text-amber`, `border-amber/30` or `bg-page/80`, and must ignore `border-text-muted` for AC-10. The test includes these as negative fixtures.
+- **`rounded-[--radius-*]`** (Tailwind 3 syntax) stays as-is per scope. New components copy the surrounding classes for consistency.
+- **Performance.** There is no data change. The `:has()` rule is scoped to `.focus-ring-within`, which only appears on two elements.

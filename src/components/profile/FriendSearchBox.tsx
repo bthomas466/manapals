@@ -39,12 +39,12 @@ export default function FriendSearchBox() {
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-[--radius-chip] bg-amber px-4 py-2.5 text-sm font-bold text-page disabled:opacity-50"
+          className="min-h-11 min-w-11 shrink-0 rounded-[--radius-chip] bg-amber px-4 py-2.5 text-sm font-bold text-page disabled:opacity-50"
         >
           Go
         </button>
       </div>
-      {notFound && <p className="text-xs text-text-muted">No ManaPal with that username.</p>}
+      {notFound && <p className="text-xs text-text-secondary">No ManaPal with that username.</p>}
     </form>
   );
 }

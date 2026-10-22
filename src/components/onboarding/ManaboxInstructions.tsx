@@ -18,7 +18,7 @@ export default function ManaboxInstructions() {
           </li>
         ))}
       </ol>
-      <p className="text-xs text-text-muted">{MANABOX_EXPORT_TIP}</p>
+      <p className="text-xs text-text-secondary">{MANABOX_EXPORT_TIP}</p>
     </div>
   );
 }

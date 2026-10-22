@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useCollectionImport } from "@/components/collection/useCollectionImport";
 import { completeOnboarding } from "@/lib/onboarding/actions";
+import FieldError from "@/components/ui/FieldError";
 import ManaboxInstructions from "./ManaboxInstructions";
 
 const primaryBtn =
@@ -120,7 +121,7 @@ export default function ImportStep({
           </p>
           {step.unmatched.length > 0 && (
             <div className="max-h-40 space-y-1 overflow-y-auto rounded-[--radius-chip] border border-border bg-elevated p-3">
-              <p className="text-xs font-semibold text-text-muted">
+              <p className="text-xs font-semibold text-text-secondary">
                 {`${step.unmatched.length} card${step.unmatched.length === 1 ? "" : "s"} couldn't be matched:`}
               </p>
               {step.unmatched.map((row, i) => (
@@ -136,11 +137,7 @@ export default function ImportStep({
         </div>
       )}
 
-      {finishError && (
-        <p role="alert" className="text-sm text-red-500">
-          {finishError}
-        </p>
-      )}
+      <FieldError message={finishError} />
 
       {showNav && (
         <div className="space-y-2">
@@ -151,7 +148,7 @@ export default function ImportStep({
             type="button"
             onClick={finish}
             disabled={pending}
-            className="min-h-11 w-full text-sm font-semibold text-text-muted disabled:opacity-50"
+            className="min-h-11 w-full text-sm font-semibold text-text-secondary disabled:opacity-50"
           >
             Skip for now
           </button>

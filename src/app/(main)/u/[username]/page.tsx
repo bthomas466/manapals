@@ -73,10 +73,11 @@ export default async function PublicProfilePage({
         </div>
         <div>
           <p className="font-bold text-text-primary text-lg">{profile.display_name}</p>
-          <p className="text-sm text-text-muted">@{profile.username}</p>
+          <p className="text-sm text-text-secondary">@{profile.username}</p>
         </div>
         <FriendActionButton
           status={status}
+          displayName={profile.display_name}
           targetUserId={profile.user_id}
           friendshipId={friendship?.id ?? null}
         />

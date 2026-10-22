@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addWishlistItem } from "@/lib/wishlist/actions";
 import { getImageUris, type ScryfallCard } from "@/lib/scryfall/client";
+import FieldError from "@/components/ui/FieldError";
 
 export default function AddCardSearch() {
   const [open, setOpen] = useState(false);
@@ -82,7 +83,7 @@ export default function AddCardSearch() {
   const canAnyPrinting = printings.length > 0 && Boolean(printings[0].oracle_id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4 pb-4 sm:pb-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-page/70 px-4 pb-4 sm:pb-0">
       <div className="w-full max-w-sm rounded-[--radius-card] bg-page border border-border p-4 space-y-3 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="font-bold text-text-primary">Add to wishlist</p>
@@ -91,7 +92,7 @@ export default function AddCardSearch() {
               setOpen(false);
               reset();
             }}
-            className="text-sm text-text-muted"
+            className="min-h-11 min-w-11 px-2 text-sm text-text-secondary"
           >
             Close
           </button>
@@ -107,12 +108,13 @@ export default function AddCardSearch() {
         />
 
         {names.length > 0 && (
-          <ul className="divide-y divide-border rounded-[--radius-chip] border border-border overflow-hidden">
+          <ul className="divide-y divide-border rounded-[--radius-chip] border border-border">
+            {/* No overflow-hidden on this list: it would clip the focus ring on the name buttons. */}
             {names.map((name) => (
               <li key={name}>
                 <button
                   onClick={() => pickName(name)}
-                  className="w-full px-3 py-2 text-left text-sm text-text-primary hover:bg-elevated"
+                  className="min-h-11 w-full px-3 py-2 text-left text-sm text-text-primary hover:bg-elevated"
                 >
                   {name}
                 </button>
@@ -121,7 +123,7 @@ export default function AddCardSearch() {
           </ul>
         )}
 
-        {loadingPrintings && <p className="text-sm text-text-muted">Loading printings...</p>}
+        {loadingPrintings && <p className="text-sm text-text-secondary">Loading printings...</p>}
 
         {selectedName && !loadingPrintings && printings.length > 0 && (
           <div className="space-y-2">
@@ -134,7 +136,8 @@ export default function AddCardSearch() {
                 Any printing of {selectedName}
               </button>
             )}
-            <ul className="max-h-64 space-y-1.5 overflow-y-auto">
+            {/* p-1/-m-1: padding keeps the focus ring from being clipped by overflow-y-auto. */}
+            <ul className="-m-1 max-h-64 space-y-1.5 overflow-y-auto p-1">
               {printings.map((card) => {
                 const image = getImageUris(card)?.small;
                 return (
@@ -159,7 +162,7 @@ export default function AddCardSearch() {
           </div>
         )}
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        <FieldError message={error} />
       </div>
     </div>
   );
