@@ -1,0 +1,124 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+:root{--page:oklch(13% 0.01 260);--surface:oklch(17% 0.012 260);--elevated:oklch(22% 0.012 260);--border:oklch(28% 0.014 260);--amber:oklch(78% 0.13 80);--danger:oklch(68% 0.18 25);--tp:oklch(96% 0.005 90);--ts:oklch(65% 0.02 260);--tm:oklch(50% 0.015 260)}
+*{box-sizing:border-box;margin:0}
+body{width:390px;background:var(--page);color:var(--tp);font:14px/1.4 system-ui,sans-serif;padding:12px;overflow-x:hidden}
+.cap{font:700 10px/1 system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin:22px 0 8px}
+.cap small{color:var(--ts);text-transform:none;letter-spacing:0;font-weight:400;font-size:11px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px}
+.ring{outline:2px solid var(--amber);outline-offset:2px}
+button,.btn{font:inherit;color:inherit;min-height:44px;border-radius:12px;border:1px solid var(--border);background:var(--elevated);color:var(--ts);font-weight:600;font-size:14px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center}
+.pri{background:var(--amber);color:var(--page);border-color:var(--amber);font-weight:700}
+.chip{min-height:44px;border-radius:8px;padding:0 14px;white-space:nowrap}
+.chip.on{background:var(--amber);color:var(--page);border-color:var(--amber)}
+.row{display:flex;gap:8px;align-items:center}
+.err{color:var(--danger);font-size:14px;margin-top:6px}
+.sec{color:var(--ts)}.muted{color:var(--tm)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{position:relative;aspect-ratio:5/7;border-radius:10px;background:linear-gradient(160deg,#3a3550,#1c1a2a);border:1px solid var(--border);font-size:10px;padding:6px;color:var(--ts)}
+.tile .any{position:absolute;top:6px;left:6px;background:var(--elevated);border-radius:6px;padding:1px 5px;font-size:10px}
+.x{position:absolute;right:0;bottom:0;width:44px;height:44px;min-height:0;padding:0;border:0;background:none;display:flex;align-items:center;justify-content:center}
+.x i{width:22px;height:22px;border-radius:50%;background:var(--page);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;color:var(--tp)}
+.hit{outline:1px dashed oklch(70% .15 145);outline-offset:-1px}
+.nav{display:flex;border-top:1px solid var(--border);margin-top:10px;padding-top:4px}
+.nav span{flex:1;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--ts)}
+.nav .a{color:var(--amber)}
+.field{display:flex;align-items:center;min-height:44px;border:1px solid var(--border);background:var(--elevated);border-radius:12px;padding:0 12px;gap:4px}
+.field.focus{outline:2px solid var(--amber);outline-offset:2px}
+.scrim{background:color-mix(in oklch,var(--page) 70%,transparent);border-radius:16px;padding:60px 12px 12px;position:relative;min-height:330px;background-color:oklch(8% 0.01 260)}
+.dlg{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.dlg h2{font-size:16px;font-weight:700}.dlg p{font-size:14px;color:var(--ts)}
+.dlg .row button{flex:1}
+.note{font-size:11px;color:var(--ts);margin-top:6px}
+.dl{display:inline-block;font:700 10px/1 system-ui;color:var(--amber);background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:3px 6px;margin-right:4px}
+.pressed i{transform:scale(.9)}
+.chip.pressed{transform:scale(.97)}
+@keyframes dlgin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes errin{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+.err{animation:errin .15s ease-out}
+.dlg.anim{animation:dlgin .15s ease-out}
+@media (prefers-reduced-motion:reduce){.err,.dlg.anim{animation:none}.pressed i,.chip.pressed{transform:none}}
+.legend{display:inline-block;width:10px;height:10px;border:1px dashed oklch(70% .15 145);vertical-align:middle;margin-right:4px}
+</style></head><body>
+
+<div class="cap">1 · Wishlist: remove button + focus ring <small>AC-1, 7, 9</small></div>
+<div class="card">
+ <div class="tiles">
+  <div class="tile">Swords to Plowshares<span class="any">Any</span><button class="x hit pressed" aria-label="Remove Swords to Plowshares from wishlist"><i>✕</i></button></div>
+  <div class="tile">Path to Exile<span class="any">Any</span><button class="x hit ring"><i>✕</i></button></div>
+  <div class="tile">Counterspell<span class="any">Any</span><button class="x hit"><i>✕</i></button></div>
+ </div>
+ <p class="note"><span class="legend"></span>44x44 transparent hit area, small round visual stays in the corner. Middle tile shows keyboard focus: 2px amber ring, 2px offset. Label: "Remove Path to Exile from wishlist".</p>
+ <p class="note"><span class="dl">✨ D-1</span>First tile shows the pressed state: the round ✕ shrinks to 90% for 100ms so a tap visibly lands. Off with reduced motion.</p>
+ <div class="nav"><span>Collection</span><span class="a">Wishlist</span><span>Trades</span><span class="ring" style="border-radius:8px">Profile</span></div>
+ <p class="note">Bottom nav: inactive labels use text-secondary (was muted). Profile tab shows the global focus ring.</p>
+</div>
+
+<div class="cap">2 · Collection toolbar <small>AC-7, 11</small></div>
+<div class="card">
+ <div class="row" style="overflow:hidden">
+  <button class="chip on">All</button><button class="chip pressed">White</button><button class="chip ring">Blue</button><button class="chip">Black</button>
+ </div>
+ <div class="row" style="margin-top:10px"><select aria-label="Sort cards" style="min-height:44px;flex:1;background:var(--elevated);color:var(--tp);border:1px solid var(--border);border-radius:12px;padding:0 10px;font:inherit"><option>Sort: Name A-Z</option></select></div>
+ <p class="sec" style="font-size:12px;margin-top:8px">Showing 24 of 312 cards</p>
+ <p class="note"><span class="dl">✨ D-2</span>"White" shows the pressed state (97% scale, 100ms).</p>
+ <p class="sec" style="font-size:12px;margin-top:8px"><span class="dl">✨ D-3</span>No cards match your filters. Try clearing a color.</p>
+ <p class="note">Chips and sort select are 44px tall with trade mode off. Row scrolls sideways, not the page. "Showing N of M" is secondary.</p>
+</div>
+
+<div class="cap">3 · Profile edit: ring on wrapper + FieldError <small>AC-1, 6, 7</small></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px">
+ <div class="row" style="justify-content:space-between"><div><div style="font-weight:700">Priya</div><div class="sec">@priya_mtg</div><div class="sec" style="font-size:12px">priya@example.com</div></div><button>Edit</button></div>
+ <div class="field"><span class="sec" style="min-width:60px">Name</span><span>&nbsp;</span></div>
+ <div class="err" role="alert" style="margin-top:-4px">Display name is required</div>
+ <p class="note"><span class="dl">✨ D-5</span>FieldError fades in with a 2px drop over 150ms (shared component). Message text unchanged.</p>
+ <div class="field focus"><span class="sec">@</span><span>priya_mtg</span></div>
+ <div class="row"><button class="pri" style="flex:1">Save</button><button style="flex:1">Cancel</button></div>
+ <div class="row"><button class="pri" style="flex:1">Friends only</button><button style="flex:1">Public</button></div>
+ <p class="note">Error: 14px, --color-danger (68% 0.18 25), role="alert". The "@" prefix is secondary. Focused username shows the ring on the bordered wrapper. Tapping with a finger shows no ring (AC-2).</p>
+</div>
+
+<div class="cap">4 · Muted vs secondary text <small>AC-10, 11</small></div>
+<div class="card">
+ <div class="row" style="justify-content:space-between;font-size:13px"><span class="muted">Before: @e2e_friend (muted, ~3:1)</span></div>
+ <div class="row" style="justify-content:space-between;font-size:13px;margin-top:6px"><span class="sec">After: @e2e_friend (secondary, 4.5:1+)</span></div>
+ <div class="field" style="margin-top:10px"><span class="muted">Search username (placeholder stays muted)</span></div>
+ <p class="muted" style="font-size:11px;margin-top:12px;text-align:center">ManaPals is not affiliated with Manabox or SkillDevs SC.</p>
+ <p class="note">Muted remains only for placeholders and the two legal footers.</p>
+</div>
+
+<div class="cap">5 · Friend page: friends state <small>AC-13, 7</small></div>
+<div class="card" style="text-align:center">
+ <div style="font-weight:700;font-size:18px">E2E Friend</div>
+ <div class="sec">@e2e_friend</div>
+ <div class="row" style="justify-content:center;margin-top:12px">
+  <span style="min-height:44px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border);background:var(--elevated);border-radius:8px;color:var(--ts);font-weight:600">Friends ✓</span>
+  <button>Remove friend</button>
+ </div>
+ <p class="note" style="text-align:center">Chip is not a button (no border radius of a control, no tap affordance). Remove friend is secondary, 44px, never amber.</p>
+</div>
+
+<div class="cap">6a · Confirm dialog: idle <small>AC-14</small></div>
+<div class="scrim"><div class="dlg anim" role="alertdialog" aria-modal="true">
+ <h2>Remove E2E Friend as a friend?</h2>
+ <p>You'll stop seeing each other's collections, wishlists and trade matches. You can send a new request later.</p>
+ <div class="row"><button class="ring">Cancel</button><button class="pri">Remove</button></div>
+</div></div>
+<p class="note"><span class="dl">✨ D-4</span>Dialog fades and scales in from 96% over 150ms; off with reduced motion. Copy unchanged and plain.</p>
+<p class="note">Focus lands on Cancel (the safe choice). Reuses FirstAvailableConfirm layout, z-70, amber confirm style.</p>
+
+<div class="cap">6b · Pending <small>AC-15</small></div>
+<div class="scrim" style="min-height:0"><div class="dlg">
+ <h2>Remove E2E Friend as a friend?</h2>
+ <div class="row"><button>Cancel</button><button class="pri" style="opacity:.5">Removing…</button></div>
+</div></div>
+
+<div class="cap">6c · Error <small>AC-15</small></div>
+<div class="scrim" style="min-height:0"><div class="dlg">
+ <h2>Remove E2E Friend as a friend?</h2>
+ <p>You'll stop seeing each other's collections, wishlists and trade matches. You can send a new request later.</p>
+ <div class="err" role="alert" style="margin:0">Couldn't remove.</div>
+ <div class="row"><button>Cancel</button><button class="pri">Remove</button></div>
+</div></div>
+<div style="height:20px"></div>
+</body></html>
