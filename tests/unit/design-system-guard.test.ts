@@ -185,4 +185,14 @@ describe("design system guard", () => {
     }
     expect(hits).toEqual([]);
   });
+
+  it("AC-10: the agent docs teach the working radius classes", () => {
+    for (const name of ["ux-designer", "ui-designer"]) {
+      const text = readFileSync(join(process.cwd(), `.claude/agents/${name}.md`), "utf8");
+      expect(text, name).not.toContain("rounded-[--");
+      expect(text, name).toContain("rounded-card");
+    }
+    const ui = readFileSync(join(process.cwd(), ".claude/agents/ui-designer.md"), "utf8");
+    expect(ui).not.toContain("Known issue");
+  });
 });
