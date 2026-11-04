@@ -1,11 +1,13 @@
 name: Keep Supabase awake
 
 # Free-tier Supabase projects pause after ~7 days without activity. A tiny
-# read every 3 days keeps prod and staging up. The publishable keys are
-# browser-safe (RLS protects data), so they live in repo variables.
+# daily read aims to keep prod and staging up; a read every 3 days didn't stop
+# both pausing for inactivity in Oct 2026. A ping can't wake a paused project:
+# restore it from the dashboard. The publishable keys are browser-safe (RLS
+# protects data), so they live in repo variables.
 on:
   schedule:
-    - cron: "17 9 */3 * *"
+    - cron: "17 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -28,6 +30,6 @@ jobs:
           KEY: ${{ vars[matrix.key_var] }}
         run: |
           # Hits Postgres through PostgREST; RLS returns no rows to anon, which is fine.
-          status=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/cards?select=scryfall_id&limit=1" -H "apikey: $KEY")
+          status=$(curl -sS -o /dev/null -w "%{http_code}" "$URL/rest/v1/cards?select=scryfall_id&limit=1" -H "apikey: $KEY")
           echo "$URL → HTTP $status"
           test "$status" = "200"
